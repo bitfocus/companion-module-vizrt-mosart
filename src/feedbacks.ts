@@ -3,30 +3,41 @@ import type { ModuleInstance } from './main.js'
 
 export function UpdateFeedbacks(self: ModuleInstance): void {
 	self.setFeedbackDefinitions({
-		ChannelState: {
-			name: 'Example Feedback',
+		MosartStatus: {
+			name: 'Mosart Status',
 			type: 'boolean',
 			defaultStyle: {
-				bgcolor: combineRgb(255, 0, 0),
+				bgcolor: combineRgb(64, 253, 143),
 				color: combineRgb(0, 0, 0),
 			},
-			options: [
-				{
-					id: 'num',
-					type: 'number',
-					label: 'Test',
-					default: 5,
-					min: 0,
-					max: 10,
-				},
-			],
-			callback: (feedback) => {
-				console.log('Hello world!', feedback.options.num)
-				if (Number(feedback.options.num) > 5) {
-					return true
-				} else {
-					return false
-				}
+			options: [],
+			callback: () => {
+				return self.mosartAPI.status
+			},
+		},
+		RehearsalStatus: {
+			name: 'Rehearsal Status',
+			type: 'boolean',
+			defaultStyle: {
+				bgcolor: combineRgb(208, 179, 75),
+				color: combineRgb(0, 0, 0),
+			},
+			options: [],
+			callback: () => {
+				return self.mosartAPI.getRehearsalModeStatus()
+			},
+		},
+		TimelineStatus: {
+			name: 'Timeline Status',
+			type: 'boolean',
+			defaultStyle: {
+				text: 'F12\n(Running)',
+				bgcolor: combineRgb(64, 253, 143),
+				color: combineRgb(0, 0, 0),
+			},
+			options: [],
+			callback: () => {
+				return self.mosartAPI.getTimelineStatus()
 			},
 		},
 	})

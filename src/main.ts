@@ -4,6 +4,7 @@ import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
+import { UpdatePresetDefinitions } from './presets.js'
 import { MosartAPI } from './api.js'
 
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
@@ -23,6 +24,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.updateActions() // export actions
 		this.updateFeedbacks() // export feedbacks
 		this.updateVariableDefinitions() // export variable definitions
+		this.updatePresetDefinitions() // export preset definitions
 
 		this.mosartAPI = new MosartAPI(this)
 
@@ -56,6 +58,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	updateVariableDefinitions(): void {
 		UpdateVariableDefinitions(this)
+	}
+
+	updatePresetDefinitions(): void {
+		UpdatePresetDefinitions(this)
 	}
 }
 

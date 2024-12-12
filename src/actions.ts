@@ -3,7 +3,7 @@ import type { ModuleInstance } from './main.js'
 export function UpdateActions(self: ModuleInstance): void {
 	self.setActionDefinitions({
 		reload_rundown: {
-			name: 'Reload the rundown',
+			name: 'Reload rundown',
 			options: [],
 			callback: async () => {
 				const response = await self.mosartAPI.reloadRundown()
@@ -11,7 +11,7 @@ export function UpdateActions(self: ModuleInstance): void {
 			},
 		},
 		start_continue: {
-			name: 'Start or continue the rundown',
+			name: 'Start/Continue the rundown',
 			options: [
 				{
 					type: 'dropdown',
@@ -68,23 +68,19 @@ export function UpdateActions(self: ModuleInstance): void {
 			},
 		},
 		rehearsal_mode: {
-			name: 'Enable/disable/toggle rehearsal mode.',
-			options: [
-				{
-					type: 'checkbox',
-					label: 'State',
-					id: 'state',
-					default: false,
-				},
-			],
+			name: 'Toggle Rehearsal Mode',
+			options: [],
 
-			callback: async (action) => {
-				const response = await self.mosartAPI.rehearsalMode(action.options)
-				console.log(response)
+			callback: async () => {
+				const currentState = self.mosartAPI.getRehearsalModeStatus()
+				const newState = !currentState
+
+				await self.mosartAPI.rehearsalMode({ state: newState })
+				self.checkFeedbacks('RehearsalStatus')
 			},
 		},
 		template: {
-			name: 'Take a template',
+			name: 'Take template',
 			options: [
 				{
 					type: 'dropdown',

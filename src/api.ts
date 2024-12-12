@@ -6,14 +6,18 @@ export class MosartAPI {
 	instance: ModuleInstance
 	host: string
 	port: number
-	on_air_successful: boolean
+	status: boolean
+	timelineStatus: boolean
+	rehearsalStatus: boolean
 	onair_poll_interval: NodeJS.Timeout | undefined
 
 	constructor(instance: ModuleInstance) {
 		this.instance = instance
 		this.host = instance.config.host
 		this.port = instance.config.port
-		this.on_air_successful = false
+		this.status = false
+		this.timelineStatus = false
+		this.rehearsalStatus = false
 		this.onair_poll_interval = undefined
 	}
 
@@ -33,6 +37,14 @@ export class MosartAPI {
 		}
 	}
 
+	getRehearsalModeStatus(): boolean {
+		return this.rehearsalStatus
+	}
+
+	getTimelineStatus(): boolean {
+		return this.timelineStatus
+	}
+
 	setModuleStatus(): void {
 		if (!this.host) {
 			console.log('IP not specified')
@@ -40,7 +52,7 @@ export class MosartAPI {
 			return
 		}
 
-		if (!this.on_air_successful) {
+		if (!this.status) {
 			console.log('Could not connect to Mosart')
 			this.instance.updateStatus(InstanceStatus.Disconnected, 'Could not connect to Mosart')
 			return
@@ -129,12 +141,20 @@ export class MosartAPI {
 		}
 
 		try {
-			await this.getStatus()
-			this.on_air_successful = true
+			const response = await this.getStatus()
+			const responseJson = JSON.parse(response)
+			this.status = responseJson.state === 'Active'
+			this.rehearsalStatus = responseJson.rehearsalMode
+			this.timelineStatus = responseJson.timeline === 'Running'
+			this.instance?.checkFeedbacks('MosartStatus', 'RehearsalStatus', 'TimelineStatus')
 			this.setModuleStatus()
 		} catch (err) {
 			console.error('Error in statusPoll:', err)
-			this.on_air_successful = false
+			this.status = false
+			this.rehearsalStatus = false
+			this.timelineStatus = false
+			this.instance?.checkFeedbacks('MosartStatus', 'RehearsalStatus', 'TimelineStatus')
+
 			this.setModuleStatus()
 			return
 		}
@@ -150,7 +170,7 @@ export class MosartAPI {
 			void this.statusPoll().catch((err) => {
 				console.error('Error in onair_poll_interval:', err)
 			})
-		}, 5000)
+		}, 1000)
 
 		void this.statusPoll().catch((err) => {
 			console.error('Error during initial status fetch:', err)
