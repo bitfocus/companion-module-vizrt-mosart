@@ -8,39 +8,80 @@ import { UpdatePresetDefinitions } from './presets.js'
 import { MosartAPI } from './api.js'
 
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
-	config!: ModuleConfig // Setup in init()
+	config!: ModuleConfig
 	mosartAPI!: MosartAPI
+	pollInterval: NodeJS.Timeout | undefined
 
 	constructor(internal: unknown) {
 		super(internal)
+		this.pollInterval = undefined
 	}
 
 	async init(config: ModuleConfig): Promise<void> {
-		this.config = config
-
 		this.updateStatus(InstanceStatus.Connecting)
-		console.log('Module initialized')
 
-		this.updateActions() // export actions
-		this.updateFeedbacks() // export feedbacks
-		this.updateVariableDefinitions() // export variable definitions
-		this.updatePresetDefinitions() // export preset definitions
-
+		// Create MosartAPI instance first
 		this.mosartAPI = new MosartAPI(this)
+		console.log('MosartAPI initialized')
 
-		// Process module config
+		// Then update config
 		await this.configUpdated(config)
+		console.log('Config updated')
+
+		this.updateActions()
+		this.updateFeedbacks()
+		this.updateVariableDefinitions()
+		this.updatePresetDefinitions()
+
+		console.log('Starting polling')
+		// Start polling
+		await this.startPolling()
+
+		this.updateStatus(InstanceStatus.Ok)
 	}
 
-	// When module gets deleted
+	private async startPolling(): Promise<void> {
+		// Clear any existing interval
+		if (this.pollInterval !== undefined) {
+			clearInterval(this.pollInterval)
+		}
+
+		// Set up regular polling
+		this.pollInterval = setInterval(() => {
+			if (this.mosartAPI) {
+				// Only poll if API exists
+				void this.mosartAPI.statusPoll().catch((err) => {
+					console.error('Error in poll interval:', err)
+					this.updateStatus(InstanceStatus.ConnectionFailure)
+				})
+			}
+		}, this.config.pollInterval ?? 1000) // More frequent polling like the example
+	}
+
 	async destroy(): Promise<void> {
 		this.log('debug', 'destroy')
+		if (this.pollInterval !== undefined) {
+			clearInterval(this.pollInterval)
+			this.pollInterval = undefined
+		}
+		if (this.mosartAPI) {
+			await this.mosartAPI.destroy()
+		}
+		return
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
 		this.config = config
 
-		this.mosartAPI.configure()
+		try {
+			await this.mosartAPI?.configure()
+			await this.startPolling() // Restart polling with new config
+			this.updateStatus(InstanceStatus.Ok)
+		} catch (err) {
+			console.error('Error configuring API:', err)
+			this.updateStatus(InstanceStatus.ConnectionFailure)
+		}
+		return
 	}
 
 	// Return config fields for web config

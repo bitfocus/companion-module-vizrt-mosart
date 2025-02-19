@@ -9,32 +9,33 @@ export class MosartAPI {
 	status: boolean
 	timelineStatus: boolean
 	rehearsalStatus: boolean
-	onair_poll_interval: NodeJS.Timeout | undefined
 
 	constructor(instance: ModuleInstance) {
 		this.instance = instance
-		this.host = instance.config.host
-		this.port = instance.config.port
+		this.host = '' // Default empty value
+		this.port = 0 // Default port value
 		this.status = false
 		this.timelineStatus = false
 		this.rehearsalStatus = false
-		this.onair_poll_interval = undefined
 	}
 
-	configure(): void {
+	async configure(): Promise<void> {
+		if (!this.instance.config) {
+			throw new Error('Config not initialized')
+		}
 		this.host = this.instance.config.host
 		this.port = this.instance.config.port
-
-		if (this.onair_poll_interval !== undefined) {
-			clearInterval(this.onair_poll_interval)
-		}
-		this.init_onair_poll()
 	}
 
-	destroy(): void {
-		if (this.onair_poll_interval !== undefined) {
-			clearInterval(this.onair_poll_interval)
-		}
+	async destroy(): Promise<void> {
+		// Reset all statuses
+		this.status = false
+		this.timelineStatus = false
+		this.rehearsalStatus = false
+
+		// Update instance status before destroying
+		this.instance.updateStatus(InstanceStatus.Disconnected, 'MosartAPI destroyed')
+		console.log('MosartAPI destroyed')
 	}
 
 	getRehearsalModeStatus(): boolean {
@@ -75,7 +76,9 @@ export class MosartAPI {
 			searchParams: parameters,
 		}
 
-		const url = `http://${host}:${port}${path}`
+		const version = parameters.version || 'v1'
+
+		const url = `http://${host}:${port}/api/${version}/${path}`
 
 		try {
 			const response = await got(url, options)
@@ -92,45 +95,64 @@ export class MosartAPI {
 	}
 
 	async reloadRundown(): Promise<void> {
-		await this.sendRequest('/api/v1/command/reload')
+		await this.sendRequest('command/reload')
 	}
 
 	async startContinue(params: { option?: string; rate?: number; effect?: number; delay?: number }): Promise<void> {
-		console.log('startContinue', params)
-		await this.sendRequest('/api/v1/command/start-continue', params)
+		await this.sendRequest('command/start-continue', params)
+	}
+
+	async skipNext(): Promise<void> {
+		await this.sendRequest('command/skip-next')
+	}
+
+	async unskipNext(): Promise<void> {
+		await this.sendRequest('command/un-skip-next')
+	}
+
+	async skipNextSubitem(): Promise<void> {
+		await this.sendRequest('command/skip-next-sub-item')
+	}
+
+	async unskipNextSubitem(): Promise<void> {
+		await this.sendRequest('command/un-skip-next-sub-item')
 	}
 
 	async startFromTop(): Promise<void> {
-		await this.sendRequest('/api/v1/command/start-from-top')
+		await this.sendRequest('command/start-from-top')
+	}
+
+	async setAsNext(params: { storyId: string }): Promise<void> {
+		await this.sendRequest('command/set-as-next', params)
 	}
 
 	async rehearsalMode(params: { state?: boolean }): Promise<void> {
-		await this.sendRequest('/api/v1/command/rehearsal-mode', params)
+		await this.sendRequest('command/rehearsal-mode', params)
 	}
 
 	async takeTemplate(params: { type: string; variant: string; bus?: string }): Promise<void> {
-		await this.sendRequest('/api/v1/command/template', params)
+		await this.sendRequest('command/template', params)
 	}
 
 	async directTakeTemplate(params: { number: number }): Promise<void> {
-		await this.sendRequest('/api/v1/command/directtake', params)
+		await this.sendRequest('command/directtake', params)
 	}
 
-	async getBuildInfo(): Promise<any> {
-		return await this.sendRequest('/build')
+	async controlCommand(command: string, options: Record<string, any>): Promise<void> {
+		await this.sendRequest(`command/controlcommand/${command}`, options)
+	}
+
+	async openRundown(params: { id: string }): Promise<void> {
+		await this.sendRequest('command/open-rundown', params)
 	}
 
 	async getApiBuildInfo(): Promise<any> {
-		const path = '/api/v1/build'
+		const path = 'build'
 		return await this.sendRequest(path)
 	}
 
-	async getStatus(): Promise<any> {
-		return await this.sendRequest('/status')
-	}
-
 	async getApiStatus(): Promise<any> {
-		const path = '/api/v1/status'
+		const path = 'status'
 		return await this.sendRequest(path)
 	}
 
@@ -141,7 +163,7 @@ export class MosartAPI {
 		}
 
 		try {
-			const response = await this.getStatus()
+			const response = await this.getApiStatus()
 			const responseJson = JSON.parse(response)
 			this.status = responseJson.state === 'Active'
 			this.rehearsalStatus = responseJson.rehearsalMode
@@ -158,22 +180,5 @@ export class MosartAPI {
 			this.setModuleStatus()
 			return
 		}
-	}
-
-	init_onair_poll(): void {
-		console.log('init_onair_poll')
-		if (this.onair_poll_interval !== undefined) {
-			clearInterval(this.onair_poll_interval)
-		}
-
-		this.onair_poll_interval = setInterval(() => {
-			void this.statusPoll().catch((err) => {
-				console.error('Error in onair_poll_interval:', err)
-			})
-		}, 1000)
-
-		void this.statusPoll().catch((err) => {
-			console.error('Error during initial status fetch:', err)
-		})
 	}
 }

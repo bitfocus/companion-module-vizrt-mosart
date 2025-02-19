@@ -4,6 +4,7 @@ export interface ModuleConfig {
 	host: string
 	port: number
 	apiKey: string
+	pollInterval?: number // Time in milliseconds between polls
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
