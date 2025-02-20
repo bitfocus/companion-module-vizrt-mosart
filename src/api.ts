@@ -12,8 +12,8 @@ export class MosartAPI {
 
 	constructor(instance: ModuleInstance) {
 		this.instance = instance
-		this.host = '' // Default empty value
-		this.port = 0 // Default port value
+		this.host = ''
+		this.port = 0
 		this.status = false
 		this.timelineStatus = false
 		this.rehearsalStatus = false

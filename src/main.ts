@@ -34,7 +34,6 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.updatePresetDefinitions()
 
 		console.log('Starting polling')
-		// Start polling
 		await this.startPolling()
 
 		this.updateStatus(InstanceStatus.Ok)
@@ -46,7 +45,6 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			clearInterval(this.pollInterval)
 		}
 
-		// Set up regular polling
 		this.pollInterval = setInterval(() => {
 			if (this.mosartAPI) {
 				// Only poll if API exists
@@ -55,7 +53,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 					this.updateStatus(InstanceStatus.ConnectionFailure)
 				})
 			}
-		}, this.config.pollInterval ?? 1000) // More frequent polling like the example
+		}, this.config.pollInterval ?? 1000)
 	}
 
 	async destroy(): Promise<void> {
@@ -84,7 +82,6 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		return
 	}
 
-	// Return config fields for web config
 	getConfigFields(): SomeCompanionConfigField[] {
 		return GetConfigFields()
 	}
