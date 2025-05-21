@@ -1,12 +1,12 @@
-import type { ModuleInstance } from './main.js'
+import type { MosartInstance } from './main.js'
 import { combineRgb, CompanionPresetDefinitions } from '@companion-module/base'
 
-export function UpdatePresetDefinitions(self: ModuleInstance): void {
+export function UpdatePresetDefinitions(self: MosartInstance): void {
 	const presets: CompanionPresetDefinitions = {
 		my_preset: {
-			type: 'button', // This must be 'button' for now
-			category: 'Rundown', // This groups presets into categories in the ui. Try to create logical groups to help users find presets
-			name: `Start/Continue the rundown`, // A name for the preset. Shown to the user when they hover over it
+			type: 'button',
+			category: 'Rundown',
+			name: `Start/Continue the rundown`,
 			style: {
 				text: `F12`,
 				size: '14',
@@ -19,7 +19,6 @@ export function UpdatePresetDefinitions(self: ModuleInstance): void {
 						{
 							actionId: 'start_continue',
 							options: {
-								// options values to use
 								option: 'Default',
 							},
 						},
@@ -27,7 +26,7 @@ export function UpdatePresetDefinitions(self: ModuleInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [], // You can add some presets from your module here
+			feedbacks: [],
 		},
 	}
 
@@ -119,7 +118,7 @@ export function UpdatePresetDefinitions(self: ModuleInstance): void {
 		category: `External`,
 		name: 'External',
 		type: 'text',
-		text: 'External Camera Presets',
+		text: 'External Source Presets',
 	}
 
 	for (let i = 1; i <= 10; i++) {
@@ -155,6 +154,37 @@ export function UpdatePresetDefinitions(self: ModuleInstance): void {
 			],
 			feedbacks: [],
 		}
+	}
+
+	presets['status'] = {
+		category: `Status`,
+		name: 'Status',
+		type: 'text',
+		text: 'Status',
+	}
+
+	presets['status_connected'] = {
+		type: 'button',
+		category: 'Status',
+		name: 'Connected',
+		style: {
+			text: 'Mosart Status',
+			size: 18,
+			color: combineRgb(0, 0, 0),
+			bgcolor: combineRgb(255, 0, 0),
+		},
+		steps: [],
+		feedbacks: [
+			{
+				feedbackId: 'MosartStatus',
+				options: {},
+				style: {
+					bgcolor: 4259215,
+					color: 0,
+				},
+				isInverted: false,
+			},
+		],
 	}
 
 	self.setPresetDefinitions(presets)

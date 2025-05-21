@@ -1,6 +1,6 @@
-import type { ModuleInstance } from './main.js'
+import { MosartInstance } from './main.js'
 
-export function UpdateActions(self: ModuleInstance): void {
+export function UpdateActions(self: MosartInstance): void {
 	self.setActionDefinitions({
 		reload: {
 			name: 'Reload rundown',
@@ -1182,6 +1182,25 @@ export function UpdateActions(self: ModuleInstance): void {
 			options: [],
 			callback: async () => {
 				await self.mosartAPI.controlCommand('switch_videoserver_mirroring', new URLSearchParams())
+			},
+		},
+		set_connection_string: {
+			name: 'Set Connection String',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Connection Host (host)',
+					id: 'connectionHost',
+					default: '',
+				},
+			],
+			callback: async (action) => {
+				self.config.host = action.options.connectionHost as string
+				await self.destroy()
+				await self.configUpdated(self.config)
+				self.setVariableValues({
+					connectionString: `${self.config.host}:${self.config.port}`,
+				})
 			},
 		},
 	})

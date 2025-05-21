@@ -1,30 +1,43 @@
 import { InstanceStatus } from '@companion-module/base'
 import got, { OptionsOfTextResponseBody } from 'got'
-import { ModuleInstance } from './main.js'
+import { MosartInstance } from './main.js'
 
 export class MosartAPI {
-	instance: ModuleInstance
+	instance: MosartInstance
 	host: string
 	port: number
+	private connected: boolean
 	status: boolean
 	timelineStatus: boolean
 	rehearsalStatus: boolean
+	serverDescription: string
 
-	constructor(instance: ModuleInstance) {
+	constructor(instance: MosartInstance) {
 		this.instance = instance
 		this.host = ''
 		this.port = 0
+		this.connected = false
 		this.status = false
 		this.timelineStatus = false
 		this.rehearsalStatus = false
+		this.serverDescription = ''
 	}
 
 	async configure(): Promise<void> {
 		if (!this.instance.config) {
 			throw new Error('Config not initialized')
 		}
+
+		console.log('Configuring primary server')
 		this.host = this.instance.config.host
 		this.port = this.instance.config.port
+
+		try {
+			await this.connect()
+		} catch (error) {
+			console.error('Error connecting to Mosart:', error)
+			throw error
+		}
 	}
 
 	async destroy(): Promise<void> {
@@ -53,13 +66,15 @@ export class MosartAPI {
 			return
 		}
 
+		console.log('status', this.status)
+
 		if (!this.status) {
 			console.log('Could not connect to Mosart')
-			this.instance.updateStatus(InstanceStatus.Disconnected, 'Could not connect to Mosart')
+			this.instance.updateStatus(InstanceStatus.ConnectionFailure, 'Could not connect to Mosart')
 			return
+		} else {
+			this.instance.updateStatus(InstanceStatus.Ok, 'Connected to Mosart')
 		}
-
-		this.instance.updateStatus(InstanceStatus.Ok)
 	}
 
 	private async sendRequest(path: string, parameters: Record<string, any> = {}): Promise<any> {
@@ -77,20 +92,20 @@ export class MosartAPI {
 		}
 
 		const version = parameters.version || 'v1'
+		let url = ''
 
-		const url = `http://${host}:${port}/api/${version}/${path}`
-
+		if (this.instance.config.useWebApi) {
+			url = `http://${host}:${port}/mosart/api/${version}/${path}`
+		} else {
+			url = `http://${host}:${port}/api/${version}/${path}`
+		}
 		try {
 			const response = await got(url, options)
-
-			if (response.statusCode >= 400) {
-				throw new Error('Network response was not ok')
-			}
-
-			return response.body
+			return response
 		} catch (err) {
 			console.error('There was a problem with the got operation:', err)
-			throw err
+			this.setConnected(false)
+			return null
 		}
 	}
 
@@ -156,29 +171,51 @@ export class MosartAPI {
 		return await this.sendRequest(path)
 	}
 
-	async statusPoll(): Promise<void> {
-		if (!this.port || !this.host) {
-			this.setModuleStatus()
-			return
-		}
+	isConnected(): boolean {
+		return this.connected
+	}
 
-		try {
-			const response = await this.getApiStatus()
-			const responseJson = JSON.parse(response)
-			this.status = responseJson.state === 'Active'
-			this.rehearsalStatus = responseJson.rehearsalMode
-			this.timelineStatus = responseJson.timeline === 'Running'
-			this.instance?.checkFeedbacks('MosartStatus', 'RehearsalStatus', 'TimelineStatus')
-			this.setModuleStatus()
-		} catch (err) {
-			console.error('Error in statusPoll:', err)
+	setConnected(state: boolean): void {
+		this.connected = state
+		this.instance.checkFeedbacks('MosartStatus')
+		this.setModuleStatus()
+	}
+
+	async poll(): Promise<void> {
+		const response = await this.getApiStatus()
+		console.log('response', response)
+		if (response === null) {
 			this.status = false
 			this.rehearsalStatus = false
 			this.timelineStatus = false
-			this.instance?.checkFeedbacks('MosartStatus', 'RehearsalStatus', 'TimelineStatus')
-
-			this.setModuleStatus()
+			this.instance.setVariableValues({ serverDescription: '' })
+			this.setConnected(false)
 			return
+		}
+		const responseBody = response.body
+		if (!responseBody) {
+			this.status = false
+			this.rehearsalStatus = false
+			this.timelineStatus = false
+			this.instance.setVariableValues({ serverDescription: '' })
+			this.setConnected(false)
+			return
+		}
+		const responseJson = JSON.parse(responseBody)
+		this.status = true //responseJson.state === 'Active'
+		this.rehearsalStatus = responseJson.rehearsalMode
+		this.timelineStatus = responseJson.timeline === 'Running'
+		this.instance.setVariableValues({ serverDescription: responseJson.serverDescription ?? '' })
+		this.setConnected(true)
+	}
+
+	async connect(): Promise<boolean> {
+		try {
+			await this.poll()
+			return true
+		} catch (error) {
+			console.log(`Connection to Mosart failed`, error)
+			throw error
 		}
 	}
 }

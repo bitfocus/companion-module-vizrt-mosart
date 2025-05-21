@@ -1,9 +1,8 @@
-import type { ModuleInstance } from './main.js'
+import type { MosartInstance } from './main.js'
 
-export function UpdateVariableDefinitions(self: ModuleInstance): void {
+export function UpdateVariableDefinitions(self: MosartInstance): void {
 	self.setVariableDefinitions([
-		{ variableId: 'variable1', name: 'My first variable' },
-		{ variableId: 'variable2', name: 'My second variable' },
-		{ variableId: 'variable3', name: 'Another variable' },
+		{ variableId: 'serverDescription', name: 'Server Description' },
+		{ variableId: 'connectionString', name: 'Connection String' },
 	])
 }
