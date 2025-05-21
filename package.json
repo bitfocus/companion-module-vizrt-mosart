@@ -4,7 +4,6 @@
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
-    "postinstall": "husky",
     "format": "prettier -w .",
     "package": "yarn build && companion-module-build",
     "build": "rimraf dist && yarn build:main",
