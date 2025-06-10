@@ -1,26 +1,28 @@
 {
-	"id": "gfx-mosart-companion-plugin",
-	"name": "Mosart",
-	"shortname": "mosart",
-	"description": "A companion module for Mosart",
-	"version": "0.0.0",
-	"license": "MIT",
-	"repository": "",
-	"bugs": "",
-	"maintainers": [
-		{
-			"name": "fhareide",
-			"email": "fgh@tv2.no"
-		}
-	],
-	"runtime": {
-		"type": "node18",
-		"api": "nodejs-ipc",
-		"apiVersion": "0.0.0",
-		"entrypoint": "../dist/main.js"
-	},
-	"legacyIds": [],
-	"manufacturer": "Vizrt",
-	"products": ["Mosart"],
-	"keywords": []
+  "id": "companion-module-vizrt-mosart",
+  "name": "Vizrt Mosart",
+  "shortname": "mosart",
+  "description": "A companion module for Vizrt Mosart",
+  "version": "0.0.0",
+  "license": "MIT",
+  "repository": "",
+  "bugs": "",
+  "maintainers": [
+    {
+      "name": "Fredrik Hareide",
+      "email": "fgh@tv2.no"
+    }
+  ],
+  "runtime": {
+    "type": "node18",
+    "api": "nodejs-ipc",
+    "apiVersion": "0.0.0",
+    "entrypoint": "../dist/main.js"
+  },
+  "legacyIds": [],
+  "manufacturer": "Vizrt",
+  "products": [
+    "Mosart"
+  ],
+  "keywords": []
 }
