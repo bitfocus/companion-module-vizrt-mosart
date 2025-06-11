@@ -1,6 +1,6 @@
 {
   "name": "companion-module-vizrt-mosart",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@companion-module/base": "^1.11.0",
+    "@companion-module/base": "^1.12.0",
     "got": "^14.4.5"
   },
   "devDependencies": {
