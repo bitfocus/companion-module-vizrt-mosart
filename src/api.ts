@@ -8,9 +8,12 @@ export class MosartAPI {
 	port: number
 	private connected: boolean
 	status: boolean
-	timelineStatus: boolean
-	rehearsalStatus: boolean
 	serverDescription: string
+	state: string
+	timeline: string
+	autoTake: boolean
+	rehearsalMode: boolean
+	crossoverClient: boolean
 
 	constructor(instance: MosartInstance) {
 		this.instance = instance
@@ -18,9 +21,12 @@ export class MosartAPI {
 		this.port = 0
 		this.connected = false
 		this.status = false
-		this.timelineStatus = false
-		this.rehearsalStatus = false
 		this.serverDescription = ''
+		this.state = ''
+		this.timeline = ''
+		this.autoTake = false
+		this.rehearsalMode = false
+		this.crossoverClient = false
 	}
 
 	async configure(): Promise<void> {
@@ -43,8 +49,11 @@ export class MosartAPI {
 	async destroy(): Promise<void> {
 		// Reset all statuses
 		this.status = false
-		this.timelineStatus = false
-		this.rehearsalStatus = false
+		this.state = ''
+		this.timeline = ''
+		this.autoTake = false
+		this.rehearsalMode = false
+		this.crossoverClient = false
 
 		// Update instance status before destroying
 		this.instance.updateStatus(InstanceStatus.Disconnected, 'MosartAPI destroyed')
@@ -52,11 +61,11 @@ export class MosartAPI {
 	}
 
 	getRehearsalModeStatus(): boolean {
-		return this.rehearsalStatus
+		return this.rehearsalMode
 	}
 
 	getTimelineStatus(): boolean {
-		return this.timelineStatus
+		return this.timeline === 'Running'
 	}
 
 	setModuleStatus(): void {
@@ -141,7 +150,7 @@ export class MosartAPI {
 		await this.sendRequest('command/set-as-next', params)
 	}
 
-	async rehearsalMode(params: { state?: boolean }): Promise<void> {
+	async setRehearsalMode(params: { state?: boolean }): Promise<void> {
 		await this.sendRequest('command/rehearsal-mode', params)
 	}
 
@@ -186,26 +195,56 @@ export class MosartAPI {
 		console.log('response', response)
 		if (response === null) {
 			this.status = false
-			this.rehearsalStatus = false
-			this.timelineStatus = false
-			this.instance.setVariableValues({ serverDescription: '' })
+			this.state = ''
+			this.timeline = ''
+			this.autoTake = false
+			this.rehearsalMode = false
+			this.crossoverClient = false
+			this.instance.setVariableValues({
+				state: '',
+				timeline: '',
+				autoTake: '',
+				rehearsalMode: '',
+				crossoverClient: '',
+				serverDescription: '',
+			})
 			this.setConnected(false)
 			return
 		}
 		const responseBody = response.body
 		if (!responseBody) {
 			this.status = false
-			this.rehearsalStatus = false
-			this.timelineStatus = false
-			this.instance.setVariableValues({ serverDescription: '' })
+			this.state = ''
+			this.timeline = ''
+			this.autoTake = false
+			this.rehearsalMode = false
+			this.crossoverClient = false
+			this.instance.setVariableValues({
+				state: '',
+				timeline: '',
+				autoTake: '',
+				rehearsalMode: '',
+				crossoverClient: '',
+				serverDescription: '',
+			})
 			this.setConnected(false)
 			return
 		}
 		const responseJson = JSON.parse(responseBody)
 		this.status = true //responseJson.state === 'Active'
-		this.rehearsalStatus = responseJson.rehearsalMode
-		this.timelineStatus = responseJson.timeline === 'Running'
-		this.instance.setVariableValues({ serverDescription: responseJson.serverDescription ?? '' })
+		this.state = responseJson.state ?? ''
+		this.timeline = responseJson.timeline ?? ''
+		this.autoTake = responseJson.autoTake ?? false
+		this.rehearsalMode = responseJson.rehearsalMode ?? false
+		this.crossoverClient = responseJson.crossoverClient ?? false
+		this.instance.setVariableValues({
+			state: this.state,
+			timeline: this.timeline,
+			autoTake: this.autoTake.toString(),
+			rehearsalMode: this.rehearsalMode.toString(),
+			crossoverClient: this.crossoverClient.toString(),
+			serverDescription: responseJson.serverDescription ?? '',
+		})
 		this.setConnected(true)
 	}
 

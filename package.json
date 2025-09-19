@@ -1,11 +1,12 @@
 {
   "name": "companion-module-vizrt-mosart",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
     "format": "prettier -w .",
     "package": "yarn build && companion-module-build",
+    "package:to": "node scripts/package-to.js",
     "build": "rimraf dist && yarn build:main",
     "build:main": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",

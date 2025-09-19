@@ -16,7 +16,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'connectionInfo',
 			width: 12,
 			label: 'Mosart Connection Info',
-			value: `This module uses the Mosart REST API to control various aspects of Mosart. Enter the IP address or hostname of the Mosart server in the "Target IP or Hostname" field.`,
+			value: `This module uses the Mosart REST API to control various aspects of Mosart. Enter the IP address or hostname of the Mosart server in the "Target IP or Hostname" field. \n If you choose to use the Web API, the default port is 55142. If you choose to use the REST API, the default port is 55167.`,
 		},
 		{
 			type: 'checkbox',
@@ -38,7 +38,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 4,
 			min: 1,
 			max: 65535,
-			default: 8000,
+			default: 55142,
 		},
 		{
 			type: 'textinput',

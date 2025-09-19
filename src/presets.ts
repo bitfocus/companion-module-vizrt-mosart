@@ -3,7 +3,7 @@ import { combineRgb, CompanionPresetDefinitions } from '@companion-module/base'
 
 export function UpdatePresetDefinitions(self: MosartInstance): void {
 	const presets: CompanionPresetDefinitions = {
-		my_preset: {
+		start_continue: {
 			type: 'button',
 			category: 'Rundown',
 			name: `Start/Continue the rundown`,
@@ -27,6 +27,38 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 				},
 			],
 			feedbacks: [],
+		},
+		toggle_rehearsal_mode: {
+			type: 'button',
+			category: 'Rundown',
+			name: 'Toggle Rehearsal Mode',
+			style: {
+				text: 'Rehearsal',
+				size: '14',
+				color: combineRgb(255, 255, 255),
+				bgcolor: combineRgb(0, 0, 0),
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'rehearsal_mode',
+							options: {},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'RehearsalStatus',
+					options: {},
+					style: {
+						bgcolor: combineRgb(208, 179, 75),
+						color: combineRgb(0, 0, 0),
+					},
+				},
+			],
 		},
 	}
 
