@@ -1198,7 +1198,6 @@ export function UpdateActions(self: MosartInstance): void {
 			callback: async (action) => {
 				self.config.host = action.options.connectionHost as string
 				self.config.connectionString = `${self.config.host}:${self.config.port}`
-				await self.destroy()
 				await self.configUpdated(self.config)
 				self.setVariableValues({
 					connectionString: self.config.connectionString,
