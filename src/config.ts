@@ -7,7 +7,6 @@ export interface ModuleConfig {
 	pollInterval?: number
 	useWebApi: boolean
 	connectionString?: string
-	enableOverlayList?: boolean
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
@@ -47,21 +46,6 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'API Key',
 			width: 8,
 			regex: Regex.SOMETHING,
-		},
-		{
-			type: 'static-text',
-			id: 'overlayListInfo',
-			width: 12,
-			label: 'Overlay List (Experimental)',
-			value:
-				'Enable this to fetch and track overlay graphics from the Mosart API. This will create variables for each story containing overlay information.',
-		},
-		{
-			type: 'checkbox',
-			id: 'enableOverlayList',
-			label: 'Enable Overlay List (Experimental) - minimum Mosart version 5.13.0',
-			width: 12,
-			default: false,
 		},
 	]
 }

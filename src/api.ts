@@ -2,41 +2,6 @@ import { InstanceStatus } from '@companion-module/base'
 import got, { OptionsOfTextResponseBody } from 'got'
 import { MosartInstance } from './main.js'
 
-export interface OverlayField {
-	name: string
-	value: string
-	default: string | null
-	fieldType: string
-	keyList: any | null
-	inputMask: string | null
-	servers: any | null
-}
-
-export interface OverlayGraphic {
-	id: string
-	type: string
-	variant: string
-	slug: string
-	storyId: string
-	status: number
-	graphicType: string
-	handlerName: string
-	description: string
-	hasContent: boolean
-	in: number
-	duration: number
-	plannedDuration: number
-	actualDuration: number
-	fields: OverlayField[]
-	hasTemplate: any | null
-	emptyTemplate: any | null
-	templatePlaceHolders: any | null
-}
-
-export interface OverlayDataByStory {
-	[storyId: string]: OverlayGraphic[]
-}
-
 export class MosartAPI {
 	instance: MosartInstance
 	host: string
@@ -230,50 +195,14 @@ export class MosartAPI {
 		return await this.sendRequest(path)
 	}
 
-	async getOverlayList(): Promise<OverlayGraphic[] | null> {
-		try {
-			const path = 'overlay/list'
-			const response = await this.sendRequest(path)
-
-			if (response === null || !response.body) {
-				console.error('Failed to fetch overlay list')
-				return null
-			}
-
-			const overlayList: OverlayGraphic[] = JSON.parse(response.body)
-			return overlayList
-		} catch (error) {
-			console.error('Error fetching overlay list:', error)
-			return null
-		}
-	}
-
-	async takeOverlay(params: { id?: string; name?: string }): Promise<void> {
-		const path = 'overlay/take'
-		console.log('takeOverlay', path, params)
-		await this.sendRequest(path, params)
-	}
-
-	async takeOutOverlay(params: { id?: string; name?: string }): Promise<void> {
-		const path = 'overlay/take-out'
-		console.log('takeOutOverlay', path, params)
-		await this.sendRequest(path, params)
-	}
-
 	isConnected(): boolean {
 		return this.connected
 	}
 
 	setConnected(state: boolean): void {
-		const wasConnected = this.connected
 		this.connected = state
 		this.instance.checkFeedbacks('MosartStatus')
 		this.setModuleStatus()
-
-		// If we just connected (transition from false to true), fetch overlay list
-		if (!wasConnected && state && this.instance.config.enableOverlayList) {
-			void this.instance.fetchAndUpdateOverlayList()
-		}
 	}
 
 	async poll(): Promise<void> {
