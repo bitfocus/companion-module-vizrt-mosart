@@ -219,5 +219,177 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		],
 	}
 
+	presets['story_header'] = {
+		category: 'Story Navigation',
+		name: 'Story Navigation',
+		type: 'text',
+		text: 'Story Navigation',
+	}
+
+	presets['current_story'] = {
+		type: 'button',
+		category: 'Story Navigation',
+		name: 'Current Story',
+		style: {
+			text: `$(mosart:current_story_id)`,
+			alignment: 'center:center',
+			size: 10,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 0, 100),
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	}
+
+	presets['previous_story'] = {
+		type: 'button',
+		category: 'Story Navigation',
+		name: 'Previous Story',
+		style: {
+			text: `Previous\nStory`,
+			alignment: 'center:center',
+			size: 10,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 100, 0),
+		},
+		steps: [
+			{
+				down: [
+					{
+						actionId: 'previous_story',
+						options: {},
+					},
+				],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	}
+
+	presets['next_story'] = {
+		type: 'button',
+		category: 'Story Navigation',
+		name: 'Next Story',
+		style: {
+			text: `Next\nStory`,
+			alignment: 'center:center',
+			size: 10,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 100, 0),
+		},
+		steps: [
+			{
+				down: [
+					{
+						actionId: 'next_story',
+						options: {},
+					},
+				],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	}
+
+	// Add overlays header - only if feature enabled
+	if (self.config.enableOverlayList) {
+		presets['overlays_header'] = {
+			category: 'Overlays',
+			name: 'Overlays',
+			type: 'text',
+			text: 'Current Story Overlays',
+		}
+
+		// Create presets for up to 20 overlays in the current story
+		for (let i = 0; i < 20; i++) {
+			presets[`overlay_${i}`] = {
+				type: 'button',
+				category: 'Overlays',
+				name: `Overlay ${i}`,
+				style: {
+					text: `$(mosart:current_overlay_${i}_overlayName)`,
+					alignment: 'center:center',
+					size: 8,
+					color: combineRgb(255, 255, 255),
+					bgcolor: combineRgb(30, 41, 59),
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'take_overlay',
+								options: {
+									id: `$(mosart:current_overlay_${i}_id) - add id from variable for overlay ${i}`,
+									name: '',
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [],
+			}
+		}
+
+		// Add Take Out Last button
+		presets['take_out_last'] = {
+			type: 'button',
+			category: 'Overlays',
+			name: 'Take Out Last',
+			style: {
+				text: 'Take Out\\nLast',
+				alignment: 'center:center',
+				size: 14,
+				color: combineRgb(255, 255, 255),
+				bgcolor: combineRgb(200, 0, 0),
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'take_out_last_overlay',
+							options: {},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+	}
+
+	// Add refresh overlay list button if feature enabled
+	if (self.config.enableOverlayList) {
+		presets['refresh_overlay_list'] = {
+			type: 'button',
+			category: 'Story Navigation',
+			name: 'Refresh Overlay List',
+			style: {
+				text: '🔄\nRefresh',
+				alignment: 'center:center',
+				size: 14,
+				color: combineRgb(255, 255, 255),
+				bgcolor: combineRgb(50, 50, 50),
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'refresh_overlay_list',
+							options: {},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+	}
+
 	self.setPresetDefinitions(presets)
 }

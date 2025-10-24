@@ -1,7 +1,7 @@
 import { MosartInstance } from './main.js'
 
 export function UpdateActions(self: MosartInstance): void {
-	self.setActionDefinitions({
+	const actions: any = {
 		reload: {
 			name: 'Reload rundown',
 			options: [],
@@ -53,7 +53,7 @@ export function UpdateActions(self: MosartInstance): void {
 					max: 1000000,
 				},
 			],
-			callback: async (action) => {
+			callback: async (action: any) => {
 				await self.mosartAPI.startContinue(action.options)
 			},
 		},
@@ -102,7 +102,7 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
+			callback: async (action: any) => {
 				const options = {
 					storyId: action.options.storyId as string,
 				}
@@ -163,7 +163,7 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
+			callback: async (action: any) => {
 				const options = {
 					type: action.options.type as string,
 					variant: action.options.variant as string,
@@ -184,7 +184,7 @@ export function UpdateActions(self: MosartInstance): void {
 					max: 10000000,
 				},
 			],
-			callback: async (action) => {
+			callback: async (action: any) => {
 				const options = {
 					number: action.options.number as number,
 				}
@@ -201,7 +201,7 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
+			callback: async (action: any) => {
 				const commandString = action.options.command as string
 				const [command, paramString] = commandString.split('?')
 				const searchParams = new URLSearchParams(paramString || '')
@@ -219,7 +219,7 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
+			callback: async (action: any) => {
 				const options = {
 					id: action.options.id as string,
 				}
@@ -244,9 +244,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: 'TOGGLE',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
 				await self.mosartAPI.controlCommand('autotake', params)
 			},
 		},
@@ -260,9 +260,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				params.set('Story+Name', action.options.Story_Name as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				params.Story_Name = action.options.Story_Name as string
 				await self.mosartAPI.controlCommand('play_story', params)
 			},
 		},
@@ -276,9 +276,10 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				params.set('MicEffect', action.options.MicEffect as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				params.MicEffect = action.options.MicEffect as string
+				await self.mosartAPI.controlCommand('videowallmode', params)
 				await self.mosartAPI.controlCommand('videowallmode', params)
 			},
 		},
@@ -292,9 +293,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: false,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				params.set('CueOnly', (action.options.CueOnly as boolean).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				params.CueOnly = (action.options.CueOnly as boolean).toString()
 				await self.mosartAPI.controlCommand('release_background', params)
 			},
 		},
@@ -336,12 +337,12 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Render) params.set('Render', action.options.Render as string)
-				if (action.options.Action) params.set('Action', action.options.Action as string)
-				if (action.options.Parameter) params.set('Parameter', action.options.Parameter as string)
-				if (action.options.Value) params.set('Value', action.options.Value as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Render?.length) params.Render = action.options.Render as string
+				if (action.options.Action?.length) params.Action = action.options.Action as string
+				if (action.options.Parameter?.length) params.Parameter = action.options.Parameter as string
+				if (action.options.Value?.length) params.Value = action.options.Value as string
 				await self.mosartAPI.controlCommand('overlay_graphics', params)
 			},
 		},
@@ -355,9 +356,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				params.set('Description', action.options.Description as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Description?.length) params.Description = action.options.Description as string
 				await self.mosartAPI.controlCommand('marked', params)
 			},
 		},
@@ -373,9 +374,9 @@ export function UpdateActions(self: MosartInstance): void {
 					max: 10000000,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				params.set('Template', (action.options.Template as number).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Template?.length) params.Template = (action.options.Template as number).toString()
 				await self.mosartAPI.controlCommand('directtake', params)
 			},
 		},
@@ -383,7 +384,7 @@ export function UpdateActions(self: MosartInstance): void {
 			name: 'Accessories (Control Command)',
 			options: [],
 			callback: async () => {
-				await self.mosartAPI.controlCommand('accessories', new URLSearchParams())
+				await self.mosartAPI.controlCommand('accessories', {})
 			},
 		},
 		ncs: {
@@ -406,10 +407,10 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
-				if (action.options.Parameter) params.set('Parameter', action.options.Parameter as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
+				if (action.options.Parameter) params.Parameter = action.options.Parameter as string
 				await self.mosartAPI.controlCommand('ncs', params)
 			},
 		},
@@ -417,7 +418,7 @@ export function UpdateActions(self: MosartInstance): void {
 			name: 'Rundown NCS Resync (Control Command)',
 			options: [],
 			callback: async () => {
-				await self.mosartAPI.controlCommand('rundown_ncs_resync', new URLSearchParams())
+				await self.mosartAPI.controlCommand('rundown_ncs_resync', {})
 			},
 		},
 		user_message: {
@@ -430,9 +431,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				params.set('Message', action.options.Message as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Message?.length) params.Message = action.options.Message as string
 				await self.mosartAPI.controlCommand('user_message', params)
 			},
 		},
@@ -473,12 +474,12 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Target) params.set('Target', action.options.Target as string)
-				if (action.options.Handlers) params.set('Handlers', action.options.Handlers as string)
-				if (action.options.TakeOutMethod) params.set('TakeOutMethod', action.options.TakeOutMethod as string)
-				if (action.options.storyid) params.set('storyid', action.options.storyid as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Target) params.Target = action.options.Target as string
+				if (action.options.Handlers) params.Handlers = action.options.Handlers as string
+				if (action.options.TakeOutMethod) params.TakeOutMethod = action.options.TakeOutMethod as string
+				if (action.options.storyid) params.storyid = action.options.storyid as string
 				await self.mosartAPI.controlCommand('overlay_to_manual', params)
 			},
 		},
@@ -486,7 +487,7 @@ export function UpdateActions(self: MosartInstance): void {
 			name: 'GUI (Control Command)',
 			options: [],
 			callback: async () => {
-				await self.mosartAPI.controlCommand('gui', new URLSearchParams())
+				await self.mosartAPI.controlCommand('gui', {})
 			},
 		},
 		asrunlog_event: {
@@ -506,10 +507,10 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
-				if (action.options.Parameter) params.set('Parameter', action.options.Parameter as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
+				if (action.options.Parameter) params.Parameter = action.options.Parameter as string
 				await self.mosartAPI.controlCommand('asrunlog_event', params)
 			},
 		},
@@ -528,9 +529,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: 'TOGGLE',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
 				await self.mosartAPI.controlCommand('switch_graphics_mirroring', params)
 			},
 		},
@@ -554,10 +555,10 @@ export function UpdateActions(self: MosartInstance): void {
 					default: false,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Target) params.set('Target', action.options.Target as string)
-				params.set('Action', (action.options.Action as boolean).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Target) params.Target = action.options.Target as string
+				if (action.options.Action) params.Action = (action.options.Action as boolean).toString()
 				await self.mosartAPI.controlCommand('enable_graphics_mirroring', params)
 			},
 		},
@@ -575,9 +576,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: 'TOGGLE',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
 				await self.mosartAPI.controlCommand('switch_genlock_mode', params)
 			},
 		},
@@ -612,11 +613,11 @@ export function UpdateActions(self: MosartInstance): void {
 					default: 'CUT',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
-				if (action.options.PresetName) params.set('PresetName', action.options.PresetName as string)
-				if (action.options.Transition) params.set('Transition', action.options.Transition as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
+				if (action.options.PresetName) params.PresetName = action.options.PresetName as string
+				if (action.options.Transition) params.Transition = action.options.Transition as string
 				await self.mosartAPI.controlCommand('engine_switcher', params)
 			},
 		},
@@ -643,10 +644,10 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.MixEffect) params.set('MixEffect', action.options.MixEffect as string)
-				if (action.options.Transitionrate) params.set('Transitionrate', action.options.Transitionrate as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.MixEffect) params.MixEffect = action.options.MixEffect as string
+				if (action.options.Transitionrate) params.Transitionrate = action.options.Transitionrate as string
 				await self.mosartAPI.controlCommand('autotrans', params)
 			},
 		},
@@ -673,10 +674,10 @@ export function UpdateActions(self: MosartInstance): void {
 					max: 1000000,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.ServerChannel) params.set('ServerChannel', action.options.ServerChannel as string)
-				if (action.options.frame) params.set('frame', (action.options.frame as number).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.ServerChannel) params.ServerChannel = action.options.ServerChannel as string
+				if (action.options.frame) params.frame = (action.options.frame as number).toString()
 				await self.mosartAPI.controlCommand('video_server_goto', params)
 			},
 		},
@@ -697,9 +698,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: 'FORWARD',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Direction) params.set('Direction', action.options.Direction as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Direction) params.Direction = action.options.Direction as string
 				await self.mosartAPI.controlCommand('dve', params)
 			},
 		},
@@ -729,11 +730,11 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Engine) params.set('Engine', action.options.Engine as string)
-				if (action.options.Action) params.set('Action', action.options.Action as string)
-				if (action.options.Parameter) params.set('Parameter', action.options.Parameter as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Engine) params.Engine = action.options.Engine as string
+				if (action.options.Action) params.Action = action.options.Action as string
+				if (action.options.Parameter) params.Parameter = action.options.Parameter as string
 				await self.mosartAPI.controlCommand('fullscreen_graphics', params)
 			},
 		},
@@ -766,10 +767,10 @@ export function UpdateActions(self: MosartInstance): void {
 					max: 1000000,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
-				if (action.options.Faderate) params.set('Faderate', (action.options.Faderate as number).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
+				if (action.options.Faderate) params.Faderate = (action.options.Faderate as number).toString()
 				await self.mosartAPI.controlCommand('audio', params)
 			},
 		},
@@ -785,9 +786,9 @@ export function UpdateActions(self: MosartInstance): void {
 					max: 1000000,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Scene) params.set('Scene', (action.options.Scene as number).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Scene) params.Scene = (action.options.Scene as number).toString()
 				await self.mosartAPI.controlCommand('light', params)
 			},
 		},
@@ -807,9 +808,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: 'START',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
 				await self.mosartAPI.controlCommand('sequence', params)
 			},
 		},
@@ -838,11 +839,10 @@ export function UpdateActions(self: MosartInstance): void {
 					max: 1000000,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.MixEffect) params.set('MixEffect', action.options.MixEffect as string)
-				if (action.options.Transitionrate)
-					params.set('Transitionrate', (action.options.Transitionrate as number).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.MixEffect) params.MixEffect = action.options.MixEffect as string
+				if (action.options.Transitionrate) params.Transitionrate = (action.options.Transitionrate as number).toString()
 				await self.mosartAPI.controlCommand('take_server_to_program', params)
 			},
 		},
@@ -881,11 +881,11 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
-				if (action.options.VideoPort) params.set('VideoPort', action.options.VideoPort as string)
-				if (action.options.Parameter) params.set('Parameter', action.options.Parameter as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
+				if (action.options.VideoPort) params.VideoPort = action.options.VideoPort as string
+				if (action.options.Parameter) params.Parameter = action.options.Parameter as string
 				await self.mosartAPI.controlCommand('video_port', params)
 			},
 		},
@@ -899,9 +899,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.VideoPort) params.set('VideoPort', action.options.VideoPort as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.VideoPort) params.VideoPort = action.options.VideoPort as string
 				await self.mosartAPI.controlCommand('get_player_status', params)
 			},
 		},
@@ -920,9 +920,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: 'PLAY',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Action) params.set('Action', action.options.Action as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Action) params.Action = action.options.Action as string
 				await self.mosartAPI.controlCommand('weather', params)
 			},
 		},
@@ -936,9 +936,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Name) params.set('Name', action.options.Name as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Name) params.Name = action.options.Name as string
 				await self.mosartAPI.controlCommand('graphicsprofile', params)
 			},
 		},
@@ -952,9 +952,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Name) params.set('Name', action.options.Name as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Name) params.Name = action.options.Name as string
 				await self.mosartAPI.controlCommand('studiosetup', params)
 			},
 		},
@@ -974,10 +974,10 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Bus) params.set('Bus', action.options.Bus as string)
-				if (action.options.CrossPoint) params.set('CrossPoint', action.options.CrossPoint as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Bus) params.Bus = action.options.Bus as string
+				if (action.options.CrossPoint) params.CrossPoint = action.options.CrossPoint as string
 				await self.mosartAPI.controlCommand('set_aux_crosspoint', params)
 			},
 		},
@@ -1020,11 +1020,11 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.MixEffect) params.set('MixEffect', action.options.MixEffect as string)
-				if (action.options.Bus) params.set('Bus', action.options.Bus as string)
-				if (action.options.CrossPoint) params.set('CrossPoint', action.options.CrossPoint as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.MixEffect) params.MixEffect = action.options.MixEffect as string
+				if (action.options.Bus) params.Bus = action.options.Bus as string
+				if (action.options.CrossPoint) params.CrossPoint = action.options.CrossPoint as string
 				await self.mosartAPI.controlCommand('set_crosspoint', params)
 			},
 		},
@@ -1055,10 +1055,10 @@ export function UpdateActions(self: MosartInstance): void {
 					max: 1000000,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.TransitionType) params.set('TransitionType', action.options.TransitionType as string)
-				if (action.options.Value) params.set('Value', (action.options.Value as number).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.TransitionType) params.TransitionType = action.options.TransitionType as string
+				if (action.options.Value) params.Value = (action.options.Value as number).toString()
 				await self.mosartAPI.controlCommand('transition_type', params)
 			},
 		},
@@ -1118,15 +1118,16 @@ export function UpdateActions(self: MosartInstance): void {
 					default: false,
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Command) params.set('Command', action.options.Command as string)
-				if (action.options.ClipName) params.set('ClipName', action.options.ClipName as string)
-				if (action.options.PortName) params.set('PortName', action.options.PortName as string)
-				if (action.options.Group) params.set('Group', action.options.Group as string)
-				if (action.options.Recorder) params.set('Recorder', action.options.Recorder as string)
-				if (action.options.Duration) params.set('Duration', (action.options.Duration as number).toString())
-				params.set('IgnoreClipNamePattern', (action.options.IgnoreClipNamePattern as boolean).toString())
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Command) params.Command = action.options.Command as string
+				if (action.options.ClipName) params.ClipName = action.options.ClipName as string
+				if (action.options.PortName) params.PortName = action.options.PortName as string
+				if (action.options.Group) params.Group = action.options.Group as string
+				if (action.options.Recorder) params.Recorder = action.options.Recorder as string
+				if (action.options.Duration) params.Duration = (action.options.Duration as number).toString()
+				if (action.options.IgnoreClipNamePattern)
+					params.IgnoreClipNamePattern = (action.options.IgnoreClipNamePattern as boolean).toString()
 				await self.mosartAPI.controlCommand('record', params)
 			},
 		},
@@ -1154,11 +1155,11 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Parameter1) params.set('Parameter1', action.options.Parameter1 as string)
-				if (action.options.Parameter2) params.set('Parameter2', action.options.Parameter2 as string)
-				if (action.options.Parameter3) params.set('Parameter3', action.options.Parameter3 as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Parameter1) params.Parameter1 = action.options.Parameter1 as string
+				if (action.options.Parameter2) params.Parameter2 = action.options.Parameter2 as string
+				if (action.options.Parameter3) params.Parameter3 = action.options.Parameter3 as string
 				await self.mosartAPI.controlCommand('device_properties', params)
 			},
 		},
@@ -1172,9 +1173,9 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
-				const params = new URLSearchParams()
-				if (action.options.Salvo) params.set('Salvo', action.options.Salvo as string)
+			callback: async (action: any) => {
+				const params: Record<string, string> = {}
+				if (action.options.Salvo) params.Salvo = action.options.Salvo as string
 				await self.mosartAPI.controlCommand('set_videoserver_salvo', params)
 			},
 		},
@@ -1182,7 +1183,7 @@ export function UpdateActions(self: MosartInstance): void {
 			name: 'Switch Video Server Mirroring (Control Command)',
 			options: [],
 			callback: async () => {
-				await self.mosartAPI.controlCommand('switch_videoserver_mirroring', new URLSearchParams())
+				await self.mosartAPI.controlCommand('switch_videoserver_mirroring', {})
 			},
 		},
 		set_connection_string: {
@@ -1195,7 +1196,7 @@ export function UpdateActions(self: MosartInstance): void {
 					default: '',
 				},
 			],
-			callback: async (action) => {
+			callback: async (action: any) => {
 				self.config.host = action.options.connectionHost as string
 				self.config.connectionString = `${self.config.host}:${self.config.port}`
 				await self.configUpdated(self.config)
@@ -1204,5 +1205,210 @@ export function UpdateActions(self: MosartInstance): void {
 				})
 			},
 		},
-	})
+	}
+
+	// Add overlay list refresh action if feature is enabled
+	if (self.config.enableOverlayList) {
+		actions.refresh_overlay_list = {
+			name: 'Refresh Overlay List',
+			options: [],
+			callback: async () => {
+				await self.fetchAndUpdateOverlayList()
+			},
+		}
+
+		actions.next_story = {
+			name: 'Select Next Story',
+			options: [],
+			callback: async () => {
+				self.nextStory()
+			},
+		}
+
+		actions.previous_story = {
+			name: 'Select Previous Story',
+			options: [],
+			callback: async () => {
+				self.previousStory()
+			},
+		}
+
+		actions.select_story = {
+			name: 'Select Story by ID',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Story ID',
+					id: 'storyId',
+					default: '',
+				},
+			],
+			callback: async (action: any) => {
+				const storyId = action.options.storyId as string
+				self.selectStory(storyId)
+			},
+		}
+
+		actions.select_story_by_index = {
+			name: 'Select Story by Index',
+			options: [
+				{
+					type: 'number',
+					label: 'Story Index (1-based)',
+					id: 'index',
+					default: 1,
+					min: 1,
+					max: 1000,
+				},
+			],
+			callback: async (action: any) => {
+				const index = (action.options.index as number) - 1
+				if (index >= 0 && index < self.storyList.length) {
+					self.selectStory(self.storyList[index])
+				}
+			},
+		}
+
+		// Actions to trigger overlays from current story
+		actions.trigger_current_overlay = {
+			name: 'Trigger Overlay from Current Story',
+			options: [
+				{
+					type: 'number',
+					label: 'Overlay Index',
+					id: 'overlayIndex',
+					default: 0,
+					min: 0,
+					max: 19,
+				},
+			],
+			callback: async (action: any) => {
+				const index = action.options.overlayIndex as number
+				const overlays = self.overlayData[self.currentStoryId]
+				if (overlays && overlays[index]) {
+					const overlay = overlays[index]
+					// Store the last taken overlay ID
+					self.lastTakenOverlayId = overlay.id
+					self.setVariableValues({
+						last_taken_overlay_id: overlay.id,
+					})
+					// Take overlay in using the new endpoint
+					await self.mosartAPI.takeOverlay({ id: overlay.id })
+				}
+			},
+		}
+
+		// Take overlay in by ID or name
+		actions.take_overlay = {
+			name: 'Take Overlay In',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Overlay ID',
+					id: 'id',
+					default: '',
+					tooltip: 'The id of the overlay graphic you want to take',
+				},
+				{
+					type: 'textinput',
+					label: 'Overlay Name (Slug)',
+					id: 'name',
+					default: '',
+					tooltip: 'The name of the overlay graphic you want to take',
+				},
+			],
+			callback: async (action: any) => {
+				const id = action.options.id as string
+				const name = action.options.name as string
+
+				// Don't execute if both parameters are empty
+				if (!id && !name) {
+					self.log('warn', 'Take overlay action called without ID or name - skipping')
+					return
+				}
+
+				const params: { id?: string; name?: string } = {}
+
+				if (id) params.id = id
+				if (name) params.name = name
+
+				// Only log if we have at least one parameter
+				if (id || name) {
+					const logParts = []
+					if (id) logParts.push('id: ' + id)
+					if (name) logParts.push('name: ' + name)
+					self.log('debug', 'Taking overlay in ' + logParts.join(', '))
+				}
+
+				// Store the last taken overlay ID
+				if (id) {
+					self.lastTakenOverlayId = id
+					self.setVariableValues({
+						last_taken_overlay_id: id,
+					})
+				}
+
+				await self.mosartAPI.takeOverlay(params)
+			},
+		}
+
+		// Take overlay out by ID or name
+		actions.take_out_overlay = {
+			name: 'Take Overlay Out',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Overlay ID',
+					id: 'id',
+					default: '',
+					tooltip: 'The id of the overlay graphic you want to take out',
+				},
+				{
+					type: 'textinput',
+					label: 'Overlay Name (Slug)',
+					id: 'name',
+					default: '',
+					tooltip: 'The name of the overlay graphic you want to take out',
+				},
+			],
+			callback: async (action: any) => {
+				const id = action.options.id as string
+				const name = action.options.name as string
+
+				// Don't execute if both parameters are empty
+				if (!id && !name) {
+					self.log('warn', 'Take out overlay action called without ID or name - skipping')
+					return
+				}
+
+				const params: { id?: string; name?: string } = {}
+
+				if (id) params.id = id
+				if (name) params.name = name
+
+				// Log the action
+				const logParts = []
+				if (id) logParts.push('id: ' + id)
+				if (name) logParts.push('name: ' + name)
+				self.log('debug', 'Taking overlay out ' + logParts.join(', '))
+
+				await self.mosartAPI.takeOutOverlay(params)
+			},
+		}
+
+		// Take out last taken overlay
+		actions.take_out_last_overlay = {
+			name: 'Take Out Last Taken Overlay',
+			options: [],
+			callback: async () => {
+				if (self.lastTakenOverlayId) {
+					await self.mosartAPI.takeOutOverlay({ id: self.lastTakenOverlayId })
+				} else {
+					self.log('warn', 'No overlay has been taken yet')
+				}
+			},
+		}
+	}
+
+	self.setActionDefinitions(actions)
 }
