@@ -69,13 +69,14 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		text: 'Hard Camera Presets',
 	}
 
+	const camHardName = self.config.presetCamHardName || 'HARD'
 	for (let i = 1; i <= 10; i++) {
 		presets[`cam_hard_${i}`] = {
 			type: 'button',
 			category: 'Camera',
 			name: `Camera ${i}`,
 			style: {
-				text: `KAM ${i}\nHARD`,
+				text: `KAM ${i}\n${camHardName}`,
 				alignment: 'center:top',
 				size: 16,
 				color: combineRgb(0, 0, 0),
@@ -111,13 +112,14 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		text: 'Soft Camera Presets',
 	}
 
+	const camSoftName = self.config.presetCamSoftName || 'SOFT'
 	for (let i = 1; i <= 10; i++) {
 		presets[`cam_soft_${i}`] = {
 			type: 'button',
 			category: 'Camera',
 			name: `Camera ${i}`,
 			style: {
-				text: `KAM ${i}\nSOFT`,
+				text: `KAM ${i}\n${camSoftName}`,
 				alignment: 'center:top',
 				size: 16,
 				color: combineRgb(0, 0, 0),
@@ -153,13 +155,14 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		text: 'External Source Presets',
 	}
 
+	const extName = self.config.presetExtName || 'EXT'
 	for (let i = 1; i <= 10; i++) {
 		presets[`ext_${i}`] = {
 			type: 'button',
 			category: 'External',
 			name: `External ${i}`,
 			style: {
-				text: `EXT ${i}`,
+				text: `${extName} ${i}`,
 				alignment: 'center:center',
 				size: 16,
 				color: combineRgb(0, 0, 0),
@@ -217,6 +220,249 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 				isInverted: false,
 			},
 		],
+	}
+
+	presets['status_autotake'] = {
+		type: 'button',
+		category: 'Status',
+		name: 'Auto Take',
+		style: {
+			text: 'Auto Take',
+			size: 14,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(50, 50, 50),
+		},
+		steps: [],
+		feedbacks: [
+			{
+				feedbackId: 'AutoTakeStatus',
+				options: {},
+				style: {
+					bgcolor: combineRgb(255, 165, 0),
+					color: combineRgb(0, 0, 0),
+				},
+			},
+		],
+	}
+
+	presets['status_crossover'] = {
+		type: 'button',
+		category: 'Status',
+		name: 'Crossover Client',
+		style: {
+			text: 'Crossover\nClient',
+			size: 14,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(50, 50, 50),
+		},
+		steps: [],
+		feedbacks: [
+			{
+				feedbackId: 'CrossoverClientStatus',
+				options: {},
+				style: {
+					bgcolor: combineRgb(100, 149, 237),
+					color: combineRgb(0, 0, 0),
+				},
+			},
+		],
+	}
+
+	presets['status_server_description'] = {
+		type: 'button',
+		category: 'Status',
+		name: 'Server Description',
+		style: {
+			text: '$(mosart:serverDescription)',
+			size: 14,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(50, 50, 50),
+		},
+		steps: [],
+		feedbacks: [
+			{
+				feedbackId: 'ServerDescription',
+				options: {
+					description: '',
+				},
+				style: {
+					bgcolor: combineRgb(180, 180, 180),
+					color: combineRgb(0, 0, 0),
+				},
+			},
+		],
+	}
+
+	presets['story_header'] = {
+		category: 'Story Navigation',
+		name: 'Story Navigation',
+		type: 'text',
+		text: 'Story Navigation',
+	}
+
+	presets['current_story'] = {
+		type: 'button',
+		category: 'Story Navigation',
+		name: 'Current Story',
+		style: {
+			text: `$(mosart:current_story_id)`,
+			alignment: 'center:center',
+			size: 10,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 0, 100),
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	}
+
+	presets['previous_story'] = {
+		type: 'button',
+		category: 'Story Navigation',
+		name: 'Previous Story',
+		style: {
+			text: `Previous\nStory`,
+			alignment: 'center:center',
+			size: 10,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 100, 0),
+		},
+		steps: [
+			{
+				down: [
+					{
+						actionId: 'previous_story',
+						options: {},
+					},
+				],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	}
+
+	presets['next_story'] = {
+		type: 'button',
+		category: 'Story Navigation',
+		name: 'Next Story',
+		style: {
+			text: `Next\nStory`,
+			alignment: 'center:center',
+			size: 10,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 100, 0),
+		},
+		steps: [
+			{
+				down: [
+					{
+						actionId: 'next_story',
+						options: {},
+					},
+				],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	}
+
+	// Add overlays header - only if feature enabled
+	if (self.config.enableOverlayList) {
+		presets['overlays_header'] = {
+			category: 'Overlays',
+			name: 'Overlays',
+			type: 'text',
+			text: 'Current Story Overlays',
+		}
+
+		// Create presets for up to 20 overlays in the current story
+		for (let i = 0; i < 20; i++) {
+			presets[`overlay_${i}`] = {
+				type: 'button',
+				category: 'Overlays',
+				name: `Overlay ${i}`,
+				style: {
+					text: `$(mosart:current_overlay_${i}_overlayName)`,
+					alignment: 'center:center',
+					size: 8,
+					color: combineRgb(255, 255, 255),
+					bgcolor: combineRgb(30, 41, 59),
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'take_overlay',
+								options: {
+									id: `$(mosart:current_overlay_${i}_id) - add id from variable for overlay ${i}`,
+									name: '',
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [],
+			}
+		}
+
+		// Add Take Out Last button
+		presets['take_out_last'] = {
+			type: 'button',
+			category: 'Overlays',
+			name: 'Take Out Last',
+			style: {
+				text: 'Take Out\\nLast',
+				alignment: 'center:center',
+				size: 14,
+				color: combineRgb(255, 255, 255),
+				bgcolor: combineRgb(200, 0, 0),
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'take_out_last_overlay',
+							options: {},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+	}
+
+	// Add refresh overlay list button if feature enabled
+	if (self.config.enableOverlayList) {
+		presets['refresh_overlay_list'] = {
+			type: 'button',
+			category: 'Story Navigation',
+			name: 'Refresh Overlay List',
+			style: {
+				text: '🔄\nRefresh',
+				alignment: 'center:center',
+				size: 14,
+				color: combineRgb(255, 255, 255),
+				bgcolor: combineRgb(50, 50, 50),
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'refresh_overlay_list',
+							options: {},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
 	}
 
 	self.setPresetDefinitions(presets)

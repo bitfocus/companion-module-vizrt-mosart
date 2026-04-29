@@ -2,6 +2,161 @@ import { InstanceStatus } from '@companion-module/base'
 import got, { OptionsOfTextResponseBody } from 'got'
 import { MosartInstance } from './main.js'
 
+export interface OverlayField {
+	name: string
+	value: string
+	default: string | null
+	fieldType: string
+	keyList: any | null
+	inputMask: string | null
+	servers: any | null
+}
+
+export interface OverlayGraphic {
+	id: string
+	type: string
+	variant: string
+	slug: string
+	storyId: string
+	status: number
+	graphicType: string
+	handlerName: string
+	description: string
+	hasContent: boolean
+	in: number
+	duration: number
+	plannedDuration: number
+	actualDuration: number
+	fields: OverlayField[]
+	hasTemplate: any | null
+	emptyTemplate: any | null
+	templatePlaceHolders: any | null
+}
+
+export interface OverlayDataByStory {
+	[storyId: string]: OverlayGraphic[]
+}
+
+export interface SearchResultDto {
+	name: string | null
+	description: string | null
+	previewPath: string | null
+	thumbnailPath: string | null
+}
+
+export interface Build {
+	version: string | null
+	timestamp: string | null
+	hubVersion: number
+}
+
+export type IdleState = 'Unknown' | 'Idle' | 'Active'
+export type TimelineState = 'Stopped' | 'Running' | 'Paused'
+
+export interface ServerStatus {
+	state: IdleState
+	timeline: TimelineState
+	autoTake: boolean
+	rehearsalMode: boolean
+	crossoverClient: boolean
+	serverDescription: string | null
+}
+
+export interface TimelineItemProperties {
+	id: string | null
+	slug: string | null
+}
+
+export interface Timeline {
+	status: TimelineState
+	currentStory: TimelineItemProperties
+	nextStory: TimelineItemProperties
+	currentItem: TimelineItemProperties
+	nextItem: TimelineItemProperties
+}
+
+export type TransitionType = 'Mix' | 'Wipe' | 'Effect'
+
+export interface Transition {
+	type: TransitionType
+	rateOrIndex: number
+}
+
+export interface StoryItem {
+	subItems: OverlayGraphic[] | null
+	transition: Transition
+	bodyText: string | null
+	id: string | null
+	type: string | null
+	variant: string | null
+	slug: string | null
+	storyId: string | null
+	objId: string | null
+	mosId: string | null
+	itemId: string | null
+	rundownId: string | null
+	status: number
+	graphicType: string | null
+	handlerName: string | null
+	description: string | null
+	hasContent: boolean | null
+	in: number
+	duration: number
+	plannedDuration: number
+	actualDuration: number
+	fields: OverlayField[] | null
+	hasTemplate: boolean | null
+	emptyTemplate: boolean | null
+	templatePlaceHolders: number | null
+	owner: string | null
+	insert: string | null
+}
+
+export interface Story {
+	id: string | null
+	insertId: string | null
+	storyDuration: number
+	storyPlannedDuration: number
+	storyBackTime: number
+	pageNumber: string | null
+	slug: string | null
+	accessories: OverlayGraphic[] | null
+	items: StoryItem[] | null
+}
+
+export interface Rundown {
+	id: string | null
+	name: string | null
+	stories: Story[] | null
+}
+
+export interface UpdateFieldsRequest {
+	newsroomTag: string
+	crosspoint: string
+}
+
+export type DeviceApiType =
+	| 'audio'
+	| 'audio-player'
+	| 'fullscreen-graphics'
+	| 'generic-rest'
+	| 'gpi'
+	| 'graphics'
+	| 'lights'
+	| 'loudness'
+	| 'robotic-camera'
+	| 'router'
+	| 'subtitling'
+	| 'switcher'
+	| 'video'
+	| 'video-wall'
+	| 'virtual-set'
+	| 'weather'
+
+export type DeviceApiTypeWithId = 'fullscreen-graphics' | 'generic-rest' | 'graphics' | 'robotic-camera'
+export type DeviceApiTypeWithIds = 'robotic-camera'
+export type BusType = 'Program' | 'Preview'
+
 export class MosartAPI {
 	instance: MosartInstance
 	host: string
@@ -86,43 +241,44 @@ export class MosartAPI {
 		}
 	}
 
-	private async sendRequest(path: string, parameters: Record<string, any> = {}): Promise<any> {
+	private async sendRequest(
+		path: string,
+		queryParams: Record<string, any> = {},
+		method: 'GET' | 'POST' | 'PATCH' = 'GET',
+		body?: Record<string, any>,
+	): Promise<any> {
 		const { port, host, apiKey } = this.instance.config
 
-		// Extract version from parameters if provided, otherwise default to v1
-		const version = parameters.version || 'v1'
-
-		// Remove version from parameters so it's not sent as a query param
-		const { version: _version, ...queryParams } = parameters
+		const version = queryParams.version || 'v1'
+		const { version: _version, ...params } = queryParams
 
 		const options: OptionsOfTextResponseBody = {
-			method: 'GET',
+			method,
 			timeout: { request: 1000 },
 			retry: { limit: 0 },
 			headers: {
 				'Content-Type': 'application/json',
 				'X-Api-Key': apiKey,
 			},
-			searchParams: queryParams,
+			searchParams: Object.keys(params).length > 0 ? params : undefined,
+			...(body !== undefined ? { json: body, responseType: undefined } : {}),
 		}
 
-		let url = ''
+		const baseUrl = this.instance.config.useWebApi
+			? `http://${host}:${port}/mosart/api/${version}`
+			: `http://${host}:${port}/api/${version}`
 
-		if (this.instance.config.useWebApi) {
-			url = `http://${host}:${port}/mosart/api/${version}/${path}`
-		} else {
-			url = `http://${host}:${port}/api/${version}/${path}`
-		}
+		const url = `${baseUrl}/${path}`
+
 		try {
-			// We don't want to log status polling
 			if (!path.includes('status') && !path.includes('build')) {
-				this.instance.log('debug', `API Request: ${options.method} ${url} ${JSON.stringify(options)}`)
+				this.instance.log('debug', `API Request: ${method} ${url}`)
 			}
 			const response = await got(url, options)
 			console.log(`API Response: ${response.statusCode}`)
 			return response
 		} catch (err: any) {
-			console.error(`API Request Failed: ${options.method} ${url}`)
+			console.error(`API Request Failed: ${method} ${url}`)
 			console.error('Error details:', err.message)
 			if (err.response) {
 				console.error('Response status:', err.response.statusCode)
@@ -169,7 +325,7 @@ export class MosartAPI {
 		await this.sendRequest('command/rehearsal-mode', params)
 	}
 
-	async takeTemplate(params: { type: string; variant: string; bus?: string }): Promise<void> {
+	async takeTemplate(params: { type: string; variant: string; bus?: string; insert?: boolean }): Promise<void> {
 		await this.sendRequest('command/template', params)
 	}
 
@@ -185,14 +341,121 @@ export class MosartAPI {
 		await this.sendRequest('command/open-rundown', params)
 	}
 
-	async getApiBuildInfo(): Promise<any> {
-		const path = 'build'
-		return await this.sendRequest(path)
+	async getApiBuildInfo(): Promise<Build | null> {
+		const response = await this.sendRequest('build')
+		if (!response?.body) return null
+		return JSON.parse(response.body) as Build
 	}
 
 	async getApiStatus(): Promise<any> {
-		const path = 'status'
-		return await this.sendRequest(path)
+		return await this.sendRequest('status')
+	}
+
+	async getRehearsalModeState(): Promise<boolean | null> {
+		const response = await this.sendRequest('rehearsal-mode')
+		if (!response?.body) return null
+		return JSON.parse(response.body) as boolean
+	}
+
+	async getTimeline(): Promise<Timeline | null> {
+		const response = await this.sendRequest('timeline')
+		if (!response?.body) return null
+		return JSON.parse(response.body) as Timeline
+	}
+
+	async getRundown(): Promise<Rundown | null> {
+		const response = await this.sendRequest('rundown')
+		if (!response?.body) return null
+		return JSON.parse(response.body) as Rundown
+	}
+
+	async updateTimelineFields(target: BusType, request: UpdateFieldsRequest): Promise<void> {
+		await this.sendRequest(`timeline/${target}`, {}, 'PATCH', request)
+	}
+
+	// Assets - Graphics
+
+	async getOverlayList(onair?: boolean): Promise<OverlayGraphic[] | null> {
+		try {
+			const params: Record<string, any> = {}
+			if (onair !== undefined) params.onair = onair
+			const response = await this.sendRequest('assets/graphics', params)
+			if (!response?.body) return null
+			return JSON.parse(response.body) as OverlayGraphic[]
+		} catch (error) {
+			console.error('Error fetching overlay list:', error)
+			return null
+		}
+	}
+
+	async takeOverlay(params: { id?: string; name?: string }): Promise<void> {
+		if (params.id) {
+			await this.sendRequest(`assets/graphics/${params.id}/take`, {}, 'POST')
+		} else if (params.name) {
+			await this.sendRequest('assets/graphics/take', { name: params.name }, 'POST')
+		}
+	}
+
+	async takeOutOverlay(params: { id?: string; name?: string }): Promise<void> {
+		if (params.id) {
+			await this.sendRequest(`assets/graphics/${params.id}/take-out`, {}, 'POST')
+		} else if (params.name) {
+			await this.sendRequest('assets/graphics/take-out', { name: params.name }, 'POST')
+		}
+	}
+
+	// Assets - Template
+
+	async takeAssetTemplateById(mosartItemId: string, target?: BusType, insert?: boolean): Promise<void> {
+		const params: Record<string, any> = {}
+		if (target !== undefined) params.target = target
+		if (insert !== undefined) params.insert = insert
+		await this.sendRequest(`assets/template/${mosartItemId}/take`, params, 'POST')
+	}
+
+	// Devices
+
+	async setDeviceStandby(type: DeviceApiType, standby: boolean): Promise<void> {
+		await this.sendRequest(`devices/${type}`, {}, 'PATCH', { standby })
+	}
+
+	async setDeviceStandbyById(type: DeviceApiTypeWithId, id: string, standby: boolean): Promise<void> {
+		await this.sendRequest(`devices/${type}/${id}`, {}, 'PATCH', { standby })
+	}
+
+	async setDeviceStandbyByIds(
+		type: DeviceApiTypeWithIds,
+		controllerId: number,
+		deviceId: number,
+		standby: boolean,
+	): Promise<void> {
+		await this.sendRequest(`devices/${type}/${controllerId}/${deviceId}`, {}, 'PATCH', { standby })
+	}
+
+	async getAudioToggles(): Promise<any> {
+		const response = await this.sendRequest('devices/audio-toggles')
+		if (!response?.body) return null
+		return JSON.parse(response.body)
+	}
+
+	// Media
+
+	async searchMedia(name: string): Promise<SearchResultDto[] | null> {
+		const response = await this.sendRequest('media/search', { name })
+		if (!response?.body) return null
+		return JSON.parse(response.body) as SearchResultDto[]
+	}
+
+	// Settings
+
+	async getNrcsSettings(): Promise<Record<string, any> | null> {
+		const response = await this.sendRequest('settings/nrcs')
+		if (!response?.body) return null
+		return JSON.parse(response.body) as Record<string, any>
+	}
+
+	async updateNrcsSettings(settings: Record<string, any>): Promise<void> {
+		await this.sendRequest('settings/nrcs', {}, 'PATCH', settings)
 	}
 
 	isConnected(): boolean {
@@ -200,9 +463,15 @@ export class MosartAPI {
 	}
 
 	setConnected(state: boolean): void {
+		const wasConnected = this.connected
 		this.connected = state
 		this.instance.checkFeedbacks('MosartStatus')
 		this.setModuleStatus()
+
+		// If we just connected (transition from false to true), fetch overlay list
+		if (!wasConnected && state && this.instance.config.enableOverlayList) {
+			void this.instance.fetchAndUpdateOverlayList()
+		}
 	}
 
 	async poll(): Promise<void> {
@@ -252,14 +521,16 @@ export class MosartAPI {
 		this.autoTake = responseJson.autoTake ?? false
 		this.rehearsalMode = responseJson.rehearsalMode ?? false
 		this.crossoverClient = responseJson.crossoverClient ?? false
+		this.serverDescription = responseJson.serverDescription ?? ''
 		this.instance.setVariableValues({
 			state: this.state,
 			timeline: this.timeline,
 			autoTake: this.autoTake.toString(),
 			rehearsalMode: this.rehearsalMode.toString(),
 			crossoverClient: this.crossoverClient.toString(),
-			serverDescription: responseJson.serverDescription ?? '',
+			serverDescription: this.serverDescription,
 		})
+		this.instance.checkFeedbacks('AutoTakeStatus', 'CrossoverClientStatus', 'ServerDescription')
 		this.setConnected(true)
 	}
 
