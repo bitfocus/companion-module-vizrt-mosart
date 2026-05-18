@@ -6,6 +6,7 @@ export interface ModuleConfig {
 	apiKey: string
 	pollInterval?: number
 	useWebApi: boolean
+	useHttps?: boolean
 	connectionString?: string
 	enableOverlayList?: boolean
 	presetCamHardName?: string
@@ -28,6 +29,13 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Use Web API',
 			width: 12,
 			default: true,
+		},
+		{
+			type: 'checkbox',
+			id: 'useHttps',
+			label: 'Use HTTPS',
+			width: 12,
+			default: false,
 		},
 		{
 			type: 'textinput',

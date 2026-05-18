@@ -29,4 +29,28 @@ const upgradeV1_1_0: CompanionStaticUpgradeScript<ModuleConfig> = (
 	return changes
 }
 
-export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig>[] = [upgradeV1_1_0]
+/**
+ * v1.2.0: Added HTTPS support. Defaults existing installations to HTTP (false)
+ * to preserve backwards compatibility.
+ */
+const upgradeV1_2_0: CompanionStaticUpgradeScript<ModuleConfig> = (
+	_context,
+	props,
+): CompanionStaticUpgradeResult<ModuleConfig> => {
+	const config: any = props.config
+	const changes: CompanionStaticUpgradeResult<ModuleConfig> = {
+		updatedConfig: null,
+		updatedActions: [],
+		updatedFeedbacks: [],
+	}
+
+	if (!config) return changes
+
+	if (config.useHttps === undefined) config.useHttps = false
+
+	changes.updatedConfig = config
+
+	return changes
+}
+
+export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig>[] = [upgradeV1_1_0, upgradeV1_2_0]

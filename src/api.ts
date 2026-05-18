@@ -264,9 +264,10 @@ export class MosartAPI {
 			...(body !== undefined ? { json: body, responseType: undefined } : {}),
 		}
 
+		const protocol = this.instance.config.useHttps ? 'https' : 'http'
 		const baseUrl = this.instance.config.useWebApi
-			? `http://${host}:${port}/mosart/api/${version}`
-			: `http://${host}:${port}/api/${version}`
+			? `${protocol}://${host}:${port}/mosart/api/${version}`
+			: `${protocol}://${host}:${port}/api/${version}`
 
 		const url = `${baseUrl}/${path}`
 
