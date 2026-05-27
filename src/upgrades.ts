@@ -53,4 +53,32 @@ const upgradeV1_2_0: CompanionStaticUpgradeScript<ModuleConfig> = (
 	return changes
 }
 
-export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig>[] = [upgradeV1_1_0, upgradeV1_2_0]
+/**
+ * v1.3.0: Exposed pollInterval as a configurable option. Defaults existing
+ * installations to 1000ms, matching the previously hard-coded value.
+ */
+const upgradeV1_3_0: CompanionStaticUpgradeScript<ModuleConfig> = (
+	_context,
+	props,
+): CompanionStaticUpgradeResult<ModuleConfig> => {
+	const config: any = props.config
+	const changes: CompanionStaticUpgradeResult<ModuleConfig> = {
+		updatedConfig: null,
+		updatedActions: [],
+		updatedFeedbacks: [],
+	}
+
+	if (!config) return changes
+
+	if (config.pollInterval === undefined) config.pollInterval = 1000
+
+	changes.updatedConfig = config
+
+	return changes
+}
+
+export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig>[] = [
+	upgradeV1_1_0,
+	upgradeV1_2_0,
+	upgradeV1_3_0,
+]

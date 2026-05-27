@@ -1,9 +1,9 @@
-import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
+import { type SomeCompanionConfigField } from '@companion-module/base'
 
 export interface ModuleConfig {
 	host: string
 	port: number
-	apiKey: string
+	apiKey?: string
 	pollInterval?: number
 	useWebApi: boolean
 	useHttps?: boolean
@@ -64,7 +64,8 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'apiKey',
 			label: 'API Key',
 			width: 8,
-			regex: Regex.SOMETHING,
+			tooltip:
+				'Leave blank if the Mosart API does not require authentication. When set, the value is sent as the X-Api-Key header on every request.',
 		},
 		{
 			type: 'number',

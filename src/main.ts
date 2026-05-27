@@ -13,6 +13,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 	pollInterval: NodeJS.Timeout | undefined
 	isBackup: boolean
 	private lastConnectionString?: string
+	private lastPollInterval?: number
 	overlayData: OverlayDataByStory
 	currentStoryId: string
 	storyList: string[]
@@ -65,6 +66,9 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			clearInterval(this.pollInterval)
 		}
 
+		const interval = this.config.pollInterval ?? 1000
+		this.lastPollInterval = interval
+
 		this.pollInterval = setInterval(() => {
 			if (this.mosartAPI) {
 				if (this.mosartAPI.isConnected()) {
@@ -74,7 +78,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 				}
 				void this.mosartAPI.poll()
 			}
-		}, this.config.pollInterval ?? 1000)
+		}, interval)
 	}
 
 	async destroy(): Promise<void> {
@@ -92,6 +96,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 		this.config = config
 
 		const newConnectionString = config.connectionString // adjust property name as needed
+		const newPollInterval = config.pollInterval ?? 1000
 
 		if (this.lastConnectionString !== newConnectionString) {
 			// Connection string changed, reset connection state
@@ -102,6 +107,10 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			this.lastConnectionString = newConnectionString
 
 			// Stop and restart polling interval
+			this.stopPolling()
+			await this.startPolling()
+		} else if (this.lastPollInterval !== newPollInterval) {
+			// Poll interval changed, restart polling without resetting the connection
 			this.stopPolling()
 			await this.startPolling()
 		}

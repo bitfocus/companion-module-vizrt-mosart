@@ -254,14 +254,20 @@ export class MosartAPI {
 
 		const useHttps = this.instance.config.useHttps === true
 
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+		}
+		// The Mosart API does not require an API key for every deployment, so
+		// only send the header when the user has actually configured one.
+		if (apiKey && apiKey.length > 0) {
+			headers['X-Api-Key'] = apiKey
+		}
+
 		const options: OptionsOfTextResponseBody = {
 			method,
 			timeout: { request: 1000 },
 			retry: { limit: 0 },
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Api-Key': apiKey,
-			},
+			headers,
 			searchParams: Object.keys(params).length > 0 ? params : undefined,
 			// Vizrt Mosart ships with a self-signed TLS certificate on its HTTPS
 			// endpoints, so the default certificate validation must be disabled
