@@ -252,6 +252,8 @@ export class MosartAPI {
 		const version = queryParams.version || 'v1'
 		const { version: _version, ...params } = queryParams
 
+		const useHttps = this.instance.config.useHttps === true
+
 		const options: OptionsOfTextResponseBody = {
 			method,
 			timeout: { request: 1000 },
@@ -261,10 +263,14 @@ export class MosartAPI {
 				'X-Api-Key': apiKey,
 			},
 			searchParams: Object.keys(params).length > 0 ? params : undefined,
+			// Vizrt Mosart ships with a self-signed TLS certificate on its HTTPS
+			// endpoints, so the default certificate validation must be disabled
+			// for HTTPS to work out-of-the-box.
+			...(useHttps ? { https: { rejectUnauthorized: false } } : {}),
 			...(body !== undefined ? { json: body, responseType: undefined } : {}),
 		}
 
-		const protocol = this.instance.config.useHttps ? 'https' : 'http'
+		const protocol = useHttps ? 'https' : 'http'
 		const baseUrl = this.instance.config.useWebApi
 			? `${protocol}://${host}:${port}/mosart/api/${version}`
 			: `${protocol}://${host}:${port}/api/${version}`

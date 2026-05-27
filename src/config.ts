@@ -21,19 +21,25 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'connectionInfo',
 			width: 12,
 			label: 'Mosart Connection Info',
-			value: `This module uses the Mosart REST API to control various aspects of Mosart. Enter the IP address or hostname of the Mosart server in the "Target IP or Hostname" field. \n If you choose to use the Web API, the default port is 55142. If you choose to use the REST API, the default port is 55167.`,
+			value:
+				'This module uses the Mosart API to control various aspects of Mosart. Enter the IP address or hostname of the Mosart server in the "Target IP or Hostname" field.\n\n' +
+				'Default ports:\n' +
+				'  • Web API (HTTP): 55142\n' +
+				'  • REST API (HTTP): 55167\n' +
+				'  • REST API (HTTPS): 55168\n\n' +
+				'Note: The Web API does not support HTTPS. If you enable HTTPS, make sure you also switch to the REST API port (55168).',
 		},
 		{
 			type: 'checkbox',
 			id: 'useWebApi',
-			label: 'Use Web API',
+			label: 'Use Web API (uncheck to use REST API)',
 			width: 12,
 			default: true,
 		},
 		{
 			type: 'checkbox',
 			id: 'useHttps',
-			label: 'Use HTTPS',
+			label: 'Use HTTPS (REST API only - default port 55168)',
 			width: 12,
 			default: false,
 		},
@@ -51,6 +57,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			min: 1,
 			max: 65535,
 			default: 55142,
+			tooltip: 'Web API: 55142 (HTTP). REST API: 55167 (HTTP) or 55168 (HTTPS).',
 		},
 		{
 			type: 'textinput',
@@ -58,6 +65,17 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'API Key',
 			width: 8,
 			regex: Regex.SOMETHING,
+		},
+		{
+			type: 'number',
+			id: 'pollInterval',
+			label: 'Poll Interval (ms)',
+			width: 4,
+			min: 100,
+			max: 60000,
+			default: 1000,
+			tooltip:
+				'How often (in milliseconds) the module polls the Mosart API for status updates. Lower values are more responsive but increase load on the Mosart server. Default: 1000ms.',
 		},
 		{
 			type: 'static-text',
