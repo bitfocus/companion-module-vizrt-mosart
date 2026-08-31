@@ -6,6 +6,7 @@ import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { UpdatePresetDefinitions } from './presets.js'
 import { MosartAPI, OverlayDataByStory } from './api.js'
+import { shouldLog, type MessageLevel } from './logging.js'
 
 export class MosartInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig
@@ -29,30 +30,39 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 		this.lastTakenOverlayId = ''
 	}
 
+	/**
+	 * Every log message in this module goes through here so the configured
+	 * Log Level can suppress it before it reaches the Companion log.
+	 */
+	logMsg(level: MessageLevel, message: string): void {
+		if (!shouldLog(this.config?.logLevel, level)) return
+		this.log(level, message)
+	}
+
 	async init(config: ModuleConfig): Promise<void> {
 		this.config = config
 		this.updateStatus(InstanceStatus.Connecting)
 
 		// Create MosartAPI instance first
 		this.mosartAPI = new MosartAPI(this)
-		console.log('MosartAPI initialized')
+		this.logMsg('info', 'MosartAPI initialized')
 
 		try {
 			await this.configUpdated(config)
 
-			console.log('Config updated and connected')
+			this.logMsg('info', 'Config updated and connected')
 
 			this.updateActions()
 			this.updateFeedbacks()
 			this.updateVariableDefinitions()
 			this.updatePresetDefinitions()
 
-			console.log('Done setting up actions, feedbacks, variables, and presets')
+			this.logMsg('info', 'Done setting up actions, feedbacks, variables, and presets')
 
-			console.log('Starting polling')
+			this.logMsg('info', 'Starting polling')
 			await this.startPolling()
 		} catch (error) {
-			console.error('Error updating config:', error)
+			this.logMsg('error', `Error updating config: ${error instanceof Error ? error.message : String(error)}`)
 			//this.updateStatus(InstanceStatus.ConnectionFailure)
 			await this.startPolling()
 
@@ -82,7 +92,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	async destroy(): Promise<void> {
-		this.log('debug', 'destroy')
+		this.logMsg('debug', 'destroy')
 		if (this.pollInterval !== undefined) {
 			clearInterval(this.pollInterval)
 			this.pollInterval = undefined
@@ -119,7 +129,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			await this.mosartAPI?.configure()
 			//this.updateStatus(InstanceStatus.Ok)
 		} catch (err) {
-			console.error('Error configuring API:', err)
+			this.logMsg('error', `Error configuring API: ${err instanceof Error ? err.message : String(err)}`)
 			this.updateStatus(InstanceStatus.ConnectionFailure)
 		}
 
@@ -161,11 +171,11 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			return
 		}
 
-		this.log('debug', 'Fetching overlay list...')
+		this.logMsg('debug', 'Fetching overlay list...')
 		const overlayList = await this.mosartAPI.getOverlayList()
 
 		if (overlayList === null) {
-			this.log('warn', 'Failed to fetch overlay list')
+			this.logMsg('warn', 'Failed to fetch overlay list')
 			return
 		}
 
@@ -189,7 +199,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			this.currentStoryId = this.storyList[0]
 		}
 
-		this.log(
+		this.logMsg(
 			'info',
 			`Overlay list updated: ${overlayList.length} graphics across ${Object.keys(groupedData).length} stories`,
 		)
@@ -322,7 +332,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 		if (this.storyList.includes(storyId)) {
 			this.currentStoryId = storyId
 			this.updateCurrentStoryVariables()
-			this.log('debug', `Selected story: ${storyId}`)
+			this.logMsg('debug', `Selected story: ${storyId}`)
 		}
 	}
 
@@ -333,7 +343,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 		const nextIndex = (currentIndex + 1) % this.storyList.length
 		this.currentStoryId = this.storyList[nextIndex]
 		this.updateCurrentStoryVariables()
-		this.log('debug', `Next story: ${this.currentStoryId}`)
+		this.logMsg('debug', `Next story: ${this.currentStoryId}`)
 	}
 
 	previousStory(): void {
@@ -343,7 +353,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 		const prevIndex = (currentIndex - 1 + this.storyList.length) % this.storyList.length
 		this.currentStoryId = this.storyList[prevIndex]
 		this.updateCurrentStoryVariables()
-		this.log('debug', `Previous story: ${this.currentStoryId}`)
+		this.logMsg('debug', `Previous story: ${this.currentStoryId}`)
 	}
 }
 

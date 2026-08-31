@@ -162,6 +162,7 @@ export class MosartAPI {
 	host: string
 	port: number
 	private connected: boolean
+	private lastLoggedConnected: boolean | undefined
 	status: boolean
 	serverDescription: string
 	state: string
@@ -175,6 +176,7 @@ export class MosartAPI {
 		this.host = ''
 		this.port = 0
 		this.connected = false
+		this.lastLoggedConnected = undefined
 		this.status = false
 		this.serverDescription = ''
 		this.state = ''
@@ -189,14 +191,17 @@ export class MosartAPI {
 			throw new Error('Config not initialized')
 		}
 
-		console.log('Configuring primary server')
+		this.instance.logMsg('info', 'Configuring primary server')
 		this.host = this.instance.config.host
 		this.port = this.instance.config.port
 
 		try {
 			await this.connect()
 		} catch (error) {
-			console.error('Error connecting to Mosart:', error)
+			this.instance.logMsg(
+				'error',
+				`Error connecting to Mosart: ${error instanceof Error ? error.message : String(error)}`,
+			)
 			throw error
 		}
 	}
@@ -212,7 +217,7 @@ export class MosartAPI {
 
 		// Update instance status before destroying
 		this.instance.updateStatus(InstanceStatus.Disconnected, 'MosartAPI destroyed')
-		console.log('MosartAPI destroyed')
+		this.instance.logMsg('info', 'MosartAPI destroyed')
 	}
 
 	getRehearsalModeStatus(): boolean {
@@ -223,20 +228,26 @@ export class MosartAPI {
 		return this.timeline === 'Running'
 	}
 
-	setModuleStatus(): void {
+	/**
+	 * Runs on every poll, so anything above debug level is only emitted when
+	 * `stateChanged` is set - otherwise a server that is down would produce one
+	 * message per poll interval.
+	 */
+	setModuleStatus(stateChanged = false): void {
 		if (!this.host) {
-			console.log('IP not specified')
+			if (stateChanged) this.instance.logMsg('warn', 'IP not specified')
 			this.instance.updateStatus(InstanceStatus.BadConfig, 'IP not specified')
 			return
 		}
 
-		console.log('status', this.status)
+		this.instance.logMsg('debug', `Status: ${this.status}`)
 
 		if (!this.status) {
-			console.log('Could not connect to Mosart')
+			if (stateChanged) this.instance.logMsg('warn', 'Could not connect to Mosart')
 			this.instance.updateStatus(InstanceStatus.ConnectionFailure, 'Could not connect to Mosart')
 			return
 		} else {
+			if (stateChanged) this.instance.logMsg('info', 'Connected to Mosart')
 			this.instance.updateStatus(InstanceStatus.Ok, 'Connected to Mosart')
 		}
 	}
@@ -283,19 +294,26 @@ export class MosartAPI {
 
 		const url = `${baseUrl}/${path}`
 
+		// The status and build endpoints are hit on every poll, so they are left
+		// out of the request/response logging to keep the debug level readable.
+		const isPollRequest = path.includes('status') || path.includes('build')
+
 		try {
-			if (!path.includes('status') && !path.includes('build')) {
-				this.instance.log('debug', `API Request: ${method} ${url}`)
+			if (!isPollRequest) {
+				this.instance.logMsg('debug', `API Request: ${method} ${url}`)
 			}
 			const response = await got(url, options)
-			console.log(`API Response: ${response.statusCode}`)
+			if (!isPollRequest) {
+				this.instance.logMsg('debug', `API Response: ${response.statusCode}`)
+			}
 			return response
 		} catch (err: any) {
-			console.error(`API Request Failed: ${method} ${url}`)
-			console.error('Error details:', err.message)
+			// A failing poll request repeats every poll interval, and the resulting
+			// connection loss is already reported by setConnected, so it is demoted
+			// to debug. Action-triggered requests are rare and always reported.
+			this.instance.logMsg(isPollRequest ? 'debug' : 'error', `API Request Failed: ${method} ${url} - ${err.message}`)
 			if (err.response) {
-				console.error('Response status:', err.response.statusCode)
-				console.error('Response body:', err.response.body)
+				this.instance.logMsg('debug', `Response status: ${err.response.statusCode}, body: ${String(err.response.body)}`)
 			}
 			this.setConnected(false)
 			return null
@@ -396,7 +414,10 @@ export class MosartAPI {
 			if (!response?.body) return null
 			return JSON.parse(response.body) as OverlayGraphic[]
 		} catch (error) {
-			console.error('Error fetching overlay list:', error)
+			this.instance.logMsg(
+				'error',
+				`Error fetching overlay list: ${error instanceof Error ? error.message : String(error)}`,
+			)
 			return null
 		}
 	}
@@ -479,7 +500,11 @@ export class MosartAPI {
 		const wasConnected = this.connected
 		this.connected = state
 		this.instance.checkFeedbacks('MosartStatus')
-		this.setModuleStatus()
+
+		// Undefined until the first call, so the initial state is always reported.
+		const stateChanged = this.lastLoggedConnected !== state
+		if (stateChanged) this.lastLoggedConnected = state
+		this.setModuleStatus(stateChanged)
 
 		// If we just connected (transition from false to true), fetch overlay list
 		if (!wasConnected && state && this.instance.config.enableOverlayList) {
@@ -489,7 +514,7 @@ export class MosartAPI {
 
 	async poll(): Promise<void> {
 		const response = await this.getApiStatus()
-		console.log('response', response)
+		this.instance.logMsg('debug', `Poll response: ${response === null ? 'no response' : response.statusCode}`)
 		if (response === null) {
 			this.status = false
 			this.state = ''
@@ -552,7 +577,10 @@ export class MosartAPI {
 			await this.poll()
 			return true
 		} catch (error) {
-			console.log(`Connection to Mosart failed`, error)
+			this.instance.logMsg(
+				'error',
+				`Connection to Mosart failed: ${error instanceof Error ? error.message : String(error)}`,
+			)
 			throw error
 		}
 	}

@@ -1,5 +1,6 @@
 import type { CompanionStaticUpgradeScript, CompanionStaticUpgradeResult } from '@companion-module/base'
 import type { ModuleConfig } from './config.js'
+import { DEFAULT_LOG_LEVEL } from './logging.js'
 
 /**
  * v1.1.0: Added preset customization fields and overlay list feature.
@@ -77,8 +78,33 @@ const upgradeV1_3_0: CompanionStaticUpgradeScript<ModuleConfig> = (
 	return changes
 }
 
+/**
+ * v1.4.0: Added the configurable log level. Defaults existing installations to
+ * 'warn', which logs only problems instead of every poll response.
+ */
+const upgradeV1_4_0: CompanionStaticUpgradeScript<ModuleConfig> = (
+	_context,
+	props,
+): CompanionStaticUpgradeResult<ModuleConfig> => {
+	const config: any = props.config
+	const changes: CompanionStaticUpgradeResult<ModuleConfig> = {
+		updatedConfig: null,
+		updatedActions: [],
+		updatedFeedbacks: [],
+	}
+
+	if (!config) return changes
+
+	if (config.logLevel === undefined) config.logLevel = DEFAULT_LOG_LEVEL
+
+	changes.updatedConfig = config
+
+	return changes
+}
+
 export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig>[] = [
 	upgradeV1_1_0,
 	upgradeV1_2_0,
 	upgradeV1_3_0,
+	upgradeV1_4_0,
 ]

@@ -21,6 +21,17 @@ The port number for the Mosart API:
 ### API Key
 Required authentication key for accessing the Mosart API. Obtain this from your Mosart system administrator.
 
+### Log Level
+Controls how much detail the module writes to the Companion log:
+
+- **Off**: No logging at all
+- **Error**: Failed requests and connection errors only
+- **Warning (default)**: Errors plus warnings, such as connection loss or actions triggered with missing parameters
+- **Info**: Adds startup, configuration, and connection state changes
+- **Debug**: Adds every API request and response, including poll traffic. Very verbose - intended for troubleshooting only
+
+Because the module polls the Mosart server every second, leaving this on **Debug** for long periods will fill the Companion log quickly. Repeating messages (such as a server that stays unreachable) are only logged when the connection state actually changes.
+
 ### Enable Overlay List (Experimental)
 **Requires Mosart version 5.13.0 or higher**
 
@@ -246,6 +257,7 @@ For each story with overlays (sanitized story ID):
 
 - **Connection Issues**: Verify the IP address, port, and API key. Check that the Mosart server is accessible on the network.
 - **Overlay List Not Working**: Ensure you're running Mosart 5.13.0 or higher and that the overlay list feature is properly configured in Mosart.
+- **Diagnosing a Problem**: Temporarily set **Log Level** to `Debug` to see every API request and response, then set it back to `Warning` when you're done.
 
 ---
 

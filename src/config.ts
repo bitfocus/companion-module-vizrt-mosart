@@ -1,10 +1,12 @@
 import { type SomeCompanionConfigField } from '@companion-module/base'
+import { DEFAULT_LOG_LEVEL, LOG_LEVEL_CHOICES, type LogLevel } from './logging.js'
 
 export interface ModuleConfig {
 	host: string
 	port: number
 	apiKey?: string
 	pollInterval?: number
+	logLevel?: LogLevel
 	useWebApi: boolean
 	useHttps?: boolean
 	connectionString?: string
@@ -77,6 +79,16 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			default: 1000,
 			tooltip:
 				'How often (in milliseconds) the module polls the Mosart API for status updates. Lower values are more responsive but increase load on the Mosart server. Default: 1000ms.',
+		},
+		{
+			type: 'dropdown',
+			id: 'logLevel',
+			label: 'Log Level',
+			width: 4,
+			default: DEFAULT_LOG_LEVEL,
+			choices: LOG_LEVEL_CHOICES,
+			tooltip:
+				'How much detail the module writes to the Companion log. Warning (default) logs only problems. Debug logs every API request and poll response and is very verbose.',
 		},
 		{
 			type: 'static-text',

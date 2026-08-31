@@ -115,7 +115,7 @@ export function UpdateActions(self: MosartInstance): void {
 
 			callback: async () => {
 				const currentState = self.mosartAPI.getRehearsalModeStatus()
-				console.log('currentState', currentState)
+				self.logMsg('debug', `Rehearsal mode current state: ${currentState}`)
 				const newState = !currentState
 
 				await self.mosartAPI.setRehearsalMode({ state: newState })
@@ -1323,7 +1323,7 @@ export function UpdateActions(self: MosartInstance): void {
 
 				// Don't execute if both parameters are empty
 				if (!id && !name) {
-					self.log('warn', 'Take overlay action called without ID or name - skipping')
+					self.logMsg('warn', 'Take overlay action called without ID or name - skipping')
 					return
 				}
 
@@ -1337,7 +1337,7 @@ export function UpdateActions(self: MosartInstance): void {
 					const logParts = []
 					if (id) logParts.push('id: ' + id)
 					if (name) logParts.push('name: ' + name)
-					self.log('debug', 'Taking overlay in ' + logParts.join(', '))
+					self.logMsg('debug', 'Taking overlay in ' + logParts.join(', '))
 				}
 
 				// Store the last taken overlay ID
@@ -1377,7 +1377,7 @@ export function UpdateActions(self: MosartInstance): void {
 
 				// Don't execute if both parameters are empty
 				if (!id && !name) {
-					self.log('warn', 'Take out overlay action called without ID or name - skipping')
+					self.logMsg('warn', 'Take out overlay action called without ID or name - skipping')
 					return
 				}
 
@@ -1390,7 +1390,7 @@ export function UpdateActions(self: MosartInstance): void {
 				const logParts = []
 				if (id) logParts.push('id: ' + id)
 				if (name) logParts.push('name: ' + name)
-				self.log('debug', 'Taking overlay out ' + logParts.join(', '))
+				self.logMsg('debug', 'Taking overlay out ' + logParts.join(', '))
 
 				await self.mosartAPI.takeOutOverlay(params)
 			},
@@ -1404,7 +1404,7 @@ export function UpdateActions(self: MosartInstance): void {
 				if (self.lastTakenOverlayId) {
 					await self.mosartAPI.takeOutOverlay({ id: self.lastTakenOverlayId })
 				} else {
-					self.log('warn', 'No overlay has been taken yet')
+					self.logMsg('warn', 'No overlay has been taken yet')
 				}
 			},
 		}
