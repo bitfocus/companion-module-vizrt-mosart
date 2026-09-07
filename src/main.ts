@@ -13,7 +13,8 @@ const MAX_POLL_BACKOFF_MS = 30_000
 function nextPollDelay(pollIntervalMs: number, consecutiveFailures: number): number {
 	if (consecutiveFailures <= 0) return pollIntervalMs
 	const exponent = Math.min(consecutiveFailures, 10)
-	return Math.min(pollIntervalMs * 2 ** exponent, MAX_POLL_BACKOFF_MS)
+	const maximumDelay = Math.max(pollIntervalMs, MAX_POLL_BACKOFF_MS)
+	return Math.min(pollIntervalMs * 2 ** exponent, maximumDelay)
 }
 
 export class MosartInstance extends InstanceBase<ModuleConfig> {
@@ -24,6 +25,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 	private lastConnectionString?: string
 	private lastPollInterval?: number
 	private pollingActive = false
+	private pollingGeneration = 0
 	private consecutiveFailures = 0
 	overlayData: OverlayDataByStory
 	currentStoryId: string
@@ -97,22 +99,23 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 		this.lastPollInterval = interval
 		this.consecutiveFailures = 0
 		this.pollingActive = true
+		const generation = this.pollingGeneration
 
 		// Wait one interval before the first scheduled poll; configure() already
 		// performs an immediate attempt when the host is set.
-		this.scheduleNextPoll(interval)
+		this.scheduleNextPoll(interval, generation)
 	}
 
-	private scheduleNextPoll(delayMs: number): void {
-		if (!this.pollingActive) return
+	private scheduleNextPoll(delayMs: number, generation: number): void {
+		if (!this.pollingActive || generation !== this.pollingGeneration) return
 
 		this.pollInterval = setTimeout(() => {
-			void this.runPoll()
+			void this.runPoll(generation)
 		}, delayMs)
 	}
 
-	private async runPoll(): Promise<void> {
-		if (!this.pollingActive) return
+	private async runPoll(generation: number): Promise<void> {
+		if (!this.pollingActive || generation !== this.pollingGeneration) return
 
 		if (!this.config.host?.trim()) {
 			this.stopPolling()
@@ -121,11 +124,16 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			return
 		}
 
-		if (this.mosartAPI) {
-			await this.mosartAPI.poll()
+		try {
+			if (this.mosartAPI) {
+				await this.mosartAPI.poll()
+			}
+		} catch (error) {
+			this.mosartAPI?.setConnected(false)
+			this.logMsg('debug', `Poll failed with an error: ${error instanceof Error ? error.message : String(error)}`)
 		}
 
-		if (!this.pollingActive) return
+		if (!this.pollingActive || generation !== this.pollingGeneration) return
 
 		const interval = this.config.pollInterval ?? DEFAULT_POLL_INTERVAL_MS
 		let delay = interval
@@ -137,7 +145,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			this.logMsg('debug', `Poll failed; retrying in ${delay}ms (attempt ${this.consecutiveFailures})`)
 		}
 
-		this.scheduleNextPoll(delay)
+		this.scheduleNextPoll(delay, generation)
 	}
 
 	async destroy(): Promise<void> {
@@ -187,6 +195,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 
 	private stopPolling(): void {
 		this.pollingActive = false
+		this.pollingGeneration++
 		this.consecutiveFailures = 0
 		if (this.pollInterval !== undefined) {
 			clearTimeout(this.pollInterval)
