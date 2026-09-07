@@ -7,7 +7,7 @@ This module provides comprehensive control of Vizrt Mosart newsroom automation s
 ## Connection Configuration
 
 ### Target IP or Hostname
-Enter the IP address or hostname of your Mosart server.
+Enter the IP address or hostname of your Mosart server. This field is required. If it is blank, the module stays idle (`Bad Config`) and does not open HTTP connections or poll. That prevents an unconfigured instance from retrying `http://undefined:...` or `http://:...` in a tight loop.
 
 ### Use Web API
 - **Enabled (default)**: Uses the Mosart Web API on port 55142 (default)
@@ -30,7 +30,9 @@ Controls how much detail the module writes to the Companion log:
 - **Info**: Adds startup, configuration, and connection state changes
 - **Debug**: Adds every API request and response, including poll traffic. Very verbose - intended for troubleshooting only
 
-Because the module polls the Mosart server every second, leaving this on **Debug** for long periods will fill the Companion log quickly. Repeating messages (such as a server that stays unreachable) are only logged when the connection state actually changes.
+Because the module polls the Mosart server every second while connected, leaving this on **Debug** for long periods will fill the Companion log quickly. Repeating messages (such as a server that stays unreachable) are only logged when the connection state actually changes.
+
+While the connection is down, poll retries back off (2s, 4s, 8s, … up to 30s at the default interval) instead of retrying on every poll tick. The interval returns to the configured value as soon as a poll succeeds.
 
 ### Enable Overlay List (Experimental)
 **Requires Mosart version 5.13.0 or higher**
@@ -249,13 +251,15 @@ For each story with overlays (sanitized story ID):
 
 5. **Control Commands**: The extensive control command actions provide low-level access to Mosart functions. Consult your Mosart documentation for specific parameter requirements.
 
-6. **Polling**: The module polls the Mosart server at regular intervals (default 1000ms) to update status and variables.
+6. **Polling**: The module polls the Mosart server at regular intervals (default 1000ms) to update status and variables. Failed polls use exponential backoff (capped at 30s) so a down or unconfigured server does not flood the network.
 
 ---
 
 ## Troubleshooting
 
 - **Connection Issues**: Verify the IP address, port, and API key. Check that the Mosart server is accessible on the network.
+- **Instance shows Bad Config / Target IP or Hostname is not set**: The host field is empty. Enter a valid Mosart address, or disable the unused connection instance. The module will not poll until a host is set.
+- **Server unreachable**: The module keeps retrying, but each failed poll doubles the wait (up to 30s) so a down server does not generate thousands of requests per hour.
 - **Overlay List Not Working**: Ensure you're running Mosart 5.13.0 or higher and that the overlay list feature is properly configured in Mosart.
 - **Diagnosing a Problem**: Temporarily set **Log Level** to `Debug` to see every API request and response, then set it back to `Warning` when you're done.
 
