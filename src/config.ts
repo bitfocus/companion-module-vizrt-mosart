@@ -1,6 +1,8 @@
 import { type SomeCompanionConfigField } from '@companion-module/base'
 import { DEFAULT_LOG_LEVEL, LOG_LEVEL_CHOICES, type LogLevel } from './logging.js'
 
+export const DEFAULT_POLL_INTERVAL_MS = 1000
+
 export interface ModuleConfig {
 	host: string
 	port: number
@@ -50,6 +52,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'host',
 			label: 'Target IP or Hostname',
 			width: 8,
+			required: true,
 		},
 		{
 			type: 'number',
@@ -76,9 +79,9 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 4,
 			min: 100,
 			max: 60000,
-			default: 1000,
+			default: DEFAULT_POLL_INTERVAL_MS,
 			tooltip:
-				'How often (in milliseconds) the module polls the Mosart API for status updates. Lower values are more responsive but increase load on the Mosart server. Default: 1000ms.',
+				'How often (in milliseconds) the module polls the Mosart API for status updates while connected. After a failed poll the interval doubles (up to 30s) until the server responds again.',
 		},
 		{
 			type: 'dropdown',

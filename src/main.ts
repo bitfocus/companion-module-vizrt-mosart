@@ -1,5 +1,5 @@
 import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
-import { GetConfigFields, type ModuleConfig } from './config.js'
+import { DEFAULT_POLL_INTERVAL_MS, GetConfigFields, type ModuleConfig } from './config.js'
 import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
@@ -8,6 +8,15 @@ import { UpdatePresetDefinitions } from './presets.js'
 import { MosartAPI, OverlayDataByStory } from './api.js'
 import { shouldLog, type MessageLevel } from './logging.js'
 
+const MAX_POLL_BACKOFF_MS = 30_000
+
+function nextPollDelay(pollIntervalMs: number, consecutiveFailures: number): number {
+	if (consecutiveFailures <= 0) return pollIntervalMs
+	const exponent = Math.min(consecutiveFailures, 10)
+	const maximumDelay = Math.max(pollIntervalMs, MAX_POLL_BACKOFF_MS)
+	return Math.min(pollIntervalMs * 2 ** exponent, maximumDelay)
+}
+
 export class MosartInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig
 	mosartAPI!: MosartAPI
@@ -15,6 +24,9 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 	isBackup: boolean
 	private lastConnectionString?: string
 	private lastPollInterval?: number
+	private pollingActive = false
+	private pollingGeneration = 0
+	private consecutiveFailures = 0
 	overlayData: OverlayDataByStory
 	currentStoryId: string
 	storyList: string[]
@@ -41,7 +53,12 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 
 	async init(config: ModuleConfig): Promise<void> {
 		this.config = config
-		this.updateStatus(InstanceStatus.Connecting)
+
+		if (!config.host?.trim()) {
+			this.updateStatus(InstanceStatus.BadConfig, 'Target IP or Hostname is not set')
+		} else {
+			this.updateStatus(InstanceStatus.Connecting)
+		}
 
 		// Create MosartAPI instance first
 		this.mosartAPI = new MosartAPI(this)
@@ -63,7 +80,6 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			await this.startPolling()
 		} catch (error) {
 			this.logMsg('error', `Error updating config: ${error instanceof Error ? error.message : String(error)}`)
-			//this.updateStatus(InstanceStatus.ConnectionFailure)
 			await this.startPolling()
 
 			return
@@ -71,32 +87,70 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	private async startPolling(): Promise<void> {
-		// Clear any existing interval
-		if (this.pollInterval !== undefined) {
-			clearInterval(this.pollInterval)
+		this.stopPolling()
+
+		if (!this.config.host?.trim()) {
+			this.updateStatus(InstanceStatus.BadConfig, 'Target IP or Hostname is not set')
+			this.logMsg('warn', 'Polling disabled: Target IP or Hostname is not set')
+			return
 		}
 
-		const interval = this.config.pollInterval ?? 1000
+		const interval = this.config.pollInterval ?? DEFAULT_POLL_INTERVAL_MS
 		this.lastPollInterval = interval
+		this.consecutiveFailures = 0
+		this.pollingActive = true
+		const generation = this.pollingGeneration
 
-		this.pollInterval = setInterval(() => {
+		// Wait one interval before the first scheduled poll; configure() already
+		// performs an immediate attempt when the host is set.
+		this.scheduleNextPoll(interval, generation)
+	}
+
+	private scheduleNextPoll(delayMs: number, generation: number): void {
+		if (!this.pollingActive || generation !== this.pollingGeneration) return
+
+		this.pollInterval = setTimeout(() => {
+			void this.runPoll(generation)
+		}, delayMs)
+	}
+
+	private async runPoll(generation: number): Promise<void> {
+		if (!this.pollingActive || generation !== this.pollingGeneration) return
+
+		if (!this.config.host?.trim()) {
+			this.stopPolling()
+			this.updateStatus(InstanceStatus.BadConfig, 'Target IP or Hostname is not set')
+			this.logMsg('warn', 'Polling disabled: Target IP or Hostname is not set')
+			return
+		}
+
+		try {
 			if (this.mosartAPI) {
-				if (this.mosartAPI.isConnected()) {
-					this.updateStatus(InstanceStatus.Ok)
-				} else {
-					this.updateStatus(InstanceStatus.Connecting)
-				}
-				void this.mosartAPI.poll()
+				await this.mosartAPI.poll()
 			}
-		}, interval)
+		} catch (error) {
+			this.mosartAPI?.setConnected(false)
+			this.logMsg('debug', `Poll failed with an error: ${error instanceof Error ? error.message : String(error)}`)
+		}
+
+		if (!this.pollingActive || generation !== this.pollingGeneration) return
+
+		const interval = this.config.pollInterval ?? DEFAULT_POLL_INTERVAL_MS
+		let delay = interval
+		if (this.mosartAPI?.isConnected()) {
+			this.consecutiveFailures = 0
+		} else {
+			this.consecutiveFailures++
+			delay = nextPollDelay(interval, this.consecutiveFailures)
+			this.logMsg('debug', `Poll failed; retrying in ${delay}ms (attempt ${this.consecutiveFailures})`)
+		}
+
+		this.scheduleNextPoll(delay, generation)
 	}
 
 	async destroy(): Promise<void> {
 		this.logMsg('debug', 'destroy')
-		if (this.pollInterval !== undefined) {
-			clearInterval(this.pollInterval)
-			this.pollInterval = undefined
-		}
+		this.stopPolling()
 		if (this.mosartAPI) {
 			await this.mosartAPI.destroy()
 		}
@@ -105,11 +159,11 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 	async configUpdated(config: ModuleConfig): Promise<void> {
 		this.config = config
 
-		const newConnectionString = config.connectionString // adjust property name as needed
-		const newPollInterval = config.pollInterval ?? 1000
+		const newConnectionString = `${config.host ?? ''}:${config.port ?? ''}`
+		const newPollInterval = config.pollInterval ?? DEFAULT_POLL_INTERVAL_MS
 
 		if (this.lastConnectionString !== newConnectionString) {
-			// Connection string changed, reset connection state
+			// Host or port changed, reset connection state
 			if (this.mosartAPI) {
 				await this.mosartAPI.destroy() // or a specific disconnect/reset method
 			}
@@ -140,8 +194,11 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	private stopPolling(): void {
+		this.pollingActive = false
+		this.pollingGeneration++
+		this.consecutiveFailures = 0
 		if (this.pollInterval !== undefined) {
-			clearInterval(this.pollInterval)
+			clearTimeout(this.pollInterval)
 			this.pollInterval = undefined
 		}
 	}

@@ -7,21 +7,27 @@ This module provides comprehensive control of Vizrt Mosart newsroom automation s
 ## Connection Configuration
 
 ### Target IP or Hostname
-Enter the IP address or hostname of your Mosart server.
+
+Enter the IP address or hostname of your Mosart server. This field is required. If it is blank, the module stays idle (`Bad Config`) and does not open HTTP connections or poll. That prevents an unconfigured instance from retrying `http://undefined:...` or `http://:...` in a tight loop.
 
 ### Use Web API
+
 - **Enabled (default)**: Uses the Mosart Web API on port 55142 (default)
 - **Disabled**: Uses the Mosart REST API on port 55167 (default)
 
 ### Target Port
+
 The port number for the Mosart API:
+
 - Web API default: `55142`
 - REST API default: `55167`
 
 ### API Key
+
 Required authentication key for accessing the Mosart API. Obtain this from your Mosart system administrator.
 
 ### Log Level
+
 Controls how much detail the module writes to the Companion log:
 
 - **Off**: No logging at all
@@ -30,12 +36,16 @@ Controls how much detail the module writes to the Companion log:
 - **Info**: Adds startup, configuration, and connection state changes
 - **Debug**: Adds every API request and response, including poll traffic. Very verbose - intended for troubleshooting only
 
-Because the module polls the Mosart server every second, leaving this on **Debug** for long periods will fill the Companion log quickly. Repeating messages (such as a server that stays unreachable) are only logged when the connection state actually changes.
+Because the module polls the Mosart server every second while connected, leaving this on **Debug** for long periods will fill the Companion log quickly. Repeating messages (such as a server that stays unreachable) are only logged when the connection state actually changes.
+
+While the connection is down, poll retries back off (2s, 4s, 8s, … up to 30s at the default interval) instead of retrying on every poll tick. The interval returns to the configured value as soon as a poll succeeds.
 
 ### Enable Overlay List (Experimental)
+
 **Requires Mosart version 5.13.0 or higher**
 
 When enabled, this feature:
+
 - Fetches and tracks overlay graphics from the Mosart API
 - Creates dynamic variables for each story containing overlay information
 - Enables story navigation actions and presets
@@ -45,6 +55,7 @@ When enabled, this feature:
 **Note**: This feature is experimental and may require additional configuration in your Mosart system.
 
 ### Preset Customization
+
 Customize the text displayed on preset buttons for cameras and external sources. This allows you to match the terminology used in your production environment.
 
 - **Camera Hard Preset Name**: Text to display for hard camera presets (default: "HARD")
@@ -61,6 +72,7 @@ Leave fields blank to use the default values. Changes will be reflected in all c
 ## Available Actions
 
 ### Rundown Control
+
 - **Reload Rundown**: Reloads the current rundown
 - **Start/Continue**: Start or continue rundown playback with options for transition type (Default, Continue, Mix, Wipe, Effect), rate, effect number, and delay
 - **Start from Top**: Restart the rundown from the first story
@@ -73,10 +85,12 @@ Leave fields blank to use the default values. Changes will be reflected in all c
 - **Open Rundown**: Open a rundown by ID
 
 ### Template Control
+
 - **Take Template**: Execute a template with options for type (Camera, Package, VoiceOver, Live, Graphics, DVE, Jingle, Telephone, AdlibPix, Break, VideoWall, Sound, Accessories), variant, and bus (Program/Preview)
 - **Direct Take**: Execute a DirectTake template by number
 
 ### Overlay Graphics Control (when Overlay List enabled)
+
 - **Refresh Overlay List**: Manually refresh the overlay list from Mosart
 - **Select Next Story**: Navigate to the next story in the overlay list
 - **Select Previous Story**: Navigate to the previous story
@@ -88,14 +102,17 @@ Leave fields blank to use the default values. Changes will be reflected in all c
 - **Take Out Last Taken Overlay**: Quickly take out the last overlay that was taken in
 
 ### Control Commands
+
 The module includes extensive control command actions for advanced Mosart integration:
 
 **Automation & Playback**
+
 - Auto Take (toggle/activate/deactivate)
 - Play Story by name
 - Auto Trans (with mix effect and transition rate)
 
 **Graphics**
+
 - Overlay Graphics (continue, take manual out, take all out, take last out, pretake next, clear, macro, take named overlay)
 - Fullscreen Graphics (continue, macro)
 - Graphics Profile selection
@@ -103,6 +120,7 @@ The module includes extensive control command actions for advanced Mosart integr
 - Overlay to Manual (selected/onair/preview targets)
 
 **Video Control**
+
 - Video Wall Mode
 - Video Port (play, pause, stop, cue, recue, loop control)
 - Video Server Goto (frame-based positioning)
@@ -112,6 +130,7 @@ The module includes extensive control command actions for advanced Mosart integr
 - Record (prepare, start, stop, delete, get SOM)
 
 **Switcher Control**
+
 - Set Crosspoint (with mix effect and bus selection)
 - Set Aux Crosspoint
 - Transition Type (mix, wipe, effect, cut, toggle)
@@ -121,9 +140,11 @@ The module includes extensive control command actions for advanced Mosart integr
 - Switch Genlock Mode
 
 **Audio**
+
 - Audio (fade manual, fade out keeps, freeze audio, set level to preview/onair, fade down/up controls)
 
 **Other Controls**
+
 - Release Background
 - Marked (with description)
 - Accessories
@@ -139,6 +160,7 @@ The module includes extensive control command actions for advanced Mosart integr
 - Device Properties
 
 ### Connection Management
+
 - **Set Connection String**: Update the connection host dynamically
 
 ---
@@ -146,15 +168,21 @@ The module includes extensive control command actions for advanced Mosart integr
 ## Available Feedbacks
 
 ### Mosart Status
+
 Indicates whether the module is successfully connected to the Mosart server.
+
 - **Default Style**: Green background when connected
 
 ### Rehearsal Status
+
 Shows the current rehearsal mode state.
+
 - **Default Style**: Yellow/gold background when rehearsal mode is active
 
 ### Timeline Status
+
 Indicates whether the rundown timeline is currently running.
+
 - **Default Style**: Green background with "F12 (Running)" text when timeline is active
 
 ---
@@ -162,6 +190,7 @@ Indicates whether the rundown timeline is currently running.
 ## Available Variables
 
 ### System Variables
+
 - `state`: Current Mosart state
 - `timeline`: Timeline status
 - `autoTake`: Auto take status
@@ -171,7 +200,9 @@ Indicates whether the rundown timeline is currently running.
 - `connectionString`: Current connection string
 
 ### Overlay List Variables (when enabled)
+
 **Story Navigation**
+
 - `current_story_id`: ID of the currently selected story
 - `current_story_index`: Index of the current story (1-based)
 - `story_count`: Total number of stories with overlays
@@ -180,6 +211,7 @@ Indicates whether the rundown timeline is currently running.
 
 **Current Story Overlays (0-19)**
 For each overlay index (0-19) in the current story:
+
 - `current_overlay_N_id`: Overlay ID
 - `current_overlay_N_description`: Overlay description
 - `current_overlay_N_variant`: Template variant
@@ -190,6 +222,7 @@ For each overlay index (0-19) in the current story:
 
 **Per-Story Overlay Variables**
 For each story with overlays (sanitized story ID):
+
 - `overlay_STORYID_story_index`: Story index
 - `overlay_STORYID_count`: Number of overlays in story
 - `overlay_STORYID_N_id`: Overlay ID
@@ -209,29 +242,35 @@ For each story with overlays (sanitized story ID):
 ## Available Presets
 
 ### Rundown Category
+
 - **F12 (Start/Continue)**: Quick button to start or continue the rundown
 - **Toggle Rehearsal Mode**: Button with feedback showing rehearsal status
 
 ### Camera Category
+
 - **Hard Cameras (1-10)**: Pre-configured camera buttons for hard camera takes (KAM 1-10 HARD)
   - Button text can be customized via the "Camera Hard Preset Name" config field
 - **Soft Cameras (1-10)**: Pre-configured camera buttons for soft camera takes (KAM 1-10 SOFT)
   - Button text can be customized via the "Camera Soft Preset Name" config field
 
 ### External Category
+
 - **External Sources (1-10)**: Pre-configured buttons for external sources (EXT 1-10) to preview
   - Button text can be customized via the "External Preset Name" config field
 
 ### Status Category
+
 - **Mosart Status**: Connection status indicator with feedback
 
 ### Story Navigation Category (when Overlay List enabled)
+
 - **Current Story**: Displays the current story ID
 - **Previous Story**: Navigate to previous story
 - **Next Story**: Navigate to next story
 - **Refresh**: Manually refresh the overlay list
 
 ### Overlays Category (when Overlay List enabled)
+
 - **Overlay Buttons (0-19)**: Dynamic buttons showing overlay names from the current story, automatically populated with variables
 - **Take Out Last**: Quick button to take out the last taken overlay
 
@@ -249,13 +288,15 @@ For each story with overlays (sanitized story ID):
 
 5. **Control Commands**: The extensive control command actions provide low-level access to Mosart functions. Consult your Mosart documentation for specific parameter requirements.
 
-6. **Polling**: The module polls the Mosart server at regular intervals (default 1000ms) to update status and variables.
+6. **Polling**: The module polls the Mosart server at regular intervals (default 1000ms) to update status and variables. Failed polls use exponential backoff (capped at 30s) so a down or unconfigured server does not flood the network.
 
 ---
 
 ## Troubleshooting
 
 - **Connection Issues**: Verify the IP address, port, and API key. Check that the Mosart server is accessible on the network.
+- **Instance shows Bad Config / Target IP or Hostname is not set**: The host field is empty. Enter a valid Mosart address, or disable the unused connection instance. The module will not poll until a host is set.
+- **Server unreachable**: The module keeps retrying, but each failed poll doubles the wait (up to 30s) so a down server does not generate thousands of requests per hour.
 - **Overlay List Not Working**: Ensure you're running Mosart 5.13.0 or higher and that the overlay list feature is properly configured in Mosart.
 - **Diagnosing a Problem**: Temporarily set **Log Level** to `Debug` to see every API request and response, then set it back to `Warning` when you're done.
 

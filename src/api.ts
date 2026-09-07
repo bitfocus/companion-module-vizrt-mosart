@@ -191,9 +191,16 @@ export class MosartAPI {
 			throw new Error('Config not initialized')
 		}
 
-		this.instance.logMsg('info', 'Configuring primary server')
-		this.host = this.instance.config.host
+		this.host = (this.instance.config.host ?? '').trim()
 		this.port = this.instance.config.port
+
+		if (!this.host) {
+			this.setConnected(false)
+			this.instance.logMsg('warn', 'Target IP or Hostname is not set; connection disabled')
+			return
+		}
+
+		this.instance.logMsg('info', 'Configuring primary server')
 
 		try {
 			await this.connect()
@@ -235,8 +242,8 @@ export class MosartAPI {
 	 */
 	setModuleStatus(stateChanged = false): void {
 		if (!this.host) {
-			if (stateChanged) this.instance.logMsg('warn', 'IP not specified')
-			this.instance.updateStatus(InstanceStatus.BadConfig, 'IP not specified')
+			if (stateChanged) this.instance.logMsg('warn', 'Target IP or Hostname is not set')
+			this.instance.updateStatus(InstanceStatus.BadConfig, 'Target IP or Hostname is not set')
 			return
 		}
 
@@ -258,7 +265,13 @@ export class MosartAPI {
 		method: 'GET' | 'POST' | 'PATCH' = 'GET',
 		body?: Record<string, any>,
 	): Promise<any> {
-		const { port, host, apiKey } = this.instance.config
+		const { port, apiKey } = this.instance.config
+		const host = (this.instance.config.host ?? '').trim()
+
+		if (!host) {
+			this.setConnected(false)
+			return null
+		}
 
 		const version = queryParams.version || 'v1'
 		const { version: _version, ...params } = queryParams
@@ -513,6 +526,13 @@ export class MosartAPI {
 	}
 
 	async poll(): Promise<void> {
+		if (!this.instance.config.host?.trim()) {
+			this.host = ''
+			this.status = false
+			this.setConnected(false)
+			return
+		}
+
 		const response = await this.getApiStatus()
 		this.instance.logMsg('debug', `Poll response: ${response === null ? 'no response' : response.statusCode}`)
 		if (response === null) {
