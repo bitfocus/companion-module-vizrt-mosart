@@ -1,4 +1,4 @@
-import { OverlayGraphic } from './api.js'
+import { AUDIO_TOGGLE_LABELS, faderVariableId, OverlayGraphic, TIMELINE_POSITION_LABELS } from './api.js'
 import type { MosartInstance } from './main.js'
 
 export function UpdateVariableDefinitions(self: MosartInstance): void {
@@ -10,7 +10,32 @@ export function UpdateVariableDefinitions(self: MosartInstance): void {
 		{ variableId: 'crossoverClient', name: 'Crossover Client' },
 		{ variableId: 'serverDescription', name: 'Server Description' },
 		{ variableId: 'connectionString', name: 'Connection String' },
+		{ variableId: 'mosartVersion', name: 'Mosart Version' },
 	]
+
+	for (const [position, label] of Object.entries(TIMELINE_POSITION_LABELS)) {
+		baseVariables.push(
+			{ variableId: `timeline_${position}_id`, name: `Timeline ${label} ID` },
+			{ variableId: `timeline_${position}_slug`, name: `Timeline ${label} Slug` },
+		)
+	}
+
+	if (self.config.enableFaderLevels) {
+		for (const name of self.mosartAPI?.getKnownFaderChannels() ?? []) {
+			baseVariables.push({ variableId: faderVariableId(name), name: `Fader Level: ${name}` })
+		}
+	}
+
+	if (self.config.enableOnAirGraphics) {
+		baseVariables.push(
+			{ variableId: 'onair_graphics_count', name: 'On-Air Graphics Count' },
+			{ variableId: 'onair_graphics_slugs', name: 'On-Air Graphics Slugs' },
+		)
+	}
+
+	for (const [key, label] of Object.entries(AUDIO_TOGGLE_LABELS)) {
+		baseVariables.push({ variableId: `audioToggle_${key}`, name: `Audio Toggle: ${label}` })
+	}
 
 	// Add overlay-related variables if feature is enabled
 	if (self.config.enableOverlayList) {

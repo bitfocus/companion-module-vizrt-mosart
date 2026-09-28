@@ -1,4 +1,52 @@
+import { BusType, DeviceApiType, DeviceApiTypeWithId } from './api.js'
 import { MosartInstance } from './main.js'
+
+const deviceTypes: DeviceApiType[] = [
+	'switcher',
+	'video',
+	'audio',
+	'audio-player',
+	'fullscreen-graphics',
+	'graphics',
+	'robotic-camera',
+	'gpi',
+	'lights',
+	'router',
+	'subtitling',
+	'video-wall',
+	'weather',
+	'virtual-set',
+	'loudness',
+	'generic-rest',
+]
+
+const deviceTypesWithId: DeviceApiTypeWithId[] = ['graphics', 'fullscreen-graphics', 'robotic-camera', 'generic-rest']
+
+function deviceTypeChoices(types: string[]): { id: string; label: string }[] {
+	return types.map((type) => ({
+		id: type,
+		label: type
+			.split('-')
+			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' '),
+	}))
+}
+
+const busChoices = [
+	{ id: 'Program', label: 'Program' },
+	{ id: 'Preview', label: 'Preview' },
+]
+
+const standbyOption = {
+	type: 'dropdown',
+	label: 'Standby',
+	id: 'standby',
+	choices: [
+		{ id: 'true', label: 'On (standby)' },
+		{ id: 'false', label: 'Off (active)' },
+	],
+	default: 'true',
+}
 
 export function UpdateActions(self: MosartInstance): void {
 	const actions: any = {
@@ -162,13 +210,21 @@ export function UpdateActions(self: MosartInstance): void {
 					],
 					default: '',
 				},
+				{
+					type: 'checkbox',
+					label: 'Insert',
+					id: 'insert',
+					tooltip: 'Insert the template into preview. Only used when the bus is Preview',
+					default: false,
+				},
 			],
 			callback: async (action: any) => {
-				const options = {
+				const options: { type: string; variant: string; bus: string; insert?: boolean } = {
 					type: action.options.type as string,
 					variant: action.options.variant as string,
 					bus: action.options.bus as string,
 				}
+				if (action.options.insert) options.insert = true
 				await self.mosartAPI.takeTemplate(options)
 			},
 		},
@@ -224,6 +280,303 @@ export function UpdateActions(self: MosartInstance): void {
 					id: action.options.id as string,
 				}
 				await self.mosartAPI.openRundown(options)
+			},
+		},
+		take_asset_template: {
+			name: 'Take template by ID',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Mosart item ID',
+					id: 'mosartItemId',
+					default: '',
+				},
+				{
+					type: 'dropdown',
+					label: 'Target',
+					id: 'target',
+					choices: busChoices,
+					default: 'Program',
+				},
+				{
+					type: 'checkbox',
+					label: 'Insert',
+					id: 'insert',
+					tooltip: 'Insert the template into preview. Only used when the target is Preview',
+					default: false,
+				},
+			],
+			callback: async (action: any) => {
+				const mosartItemId = action.options.mosartItemId as string
+				if (!mosartItemId) {
+					self.logMsg('warn', 'Take template by ID action called without an item ID - skipping')
+					return
+				}
+				await self.mosartAPI.takeAssetTemplateById(
+					mosartItemId,
+					action.options.target as BusType,
+					action.options.insert ? true : undefined,
+				)
+			},
+		},
+		update_timeline_fields: {
+			name: 'Update crosspoint on current item',
+			description: 'Changes the crosspoint assignment of a newsroom tag field on the item on Program or Preview',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Target',
+					id: 'target',
+					choices: busChoices,
+					default: 'Program',
+				},
+				{
+					type: 'textinput',
+					label: 'Newsroom tag',
+					id: 'newsroomTag',
+					tooltip: 'The field name to update, e.g. left or right',
+					default: '',
+				},
+				{
+					type: 'textinput',
+					label: 'Crosspoint',
+					id: 'crosspoint',
+					tooltip: 'The crosspoint to assign, e.g. INPUT 1',
+					default: '',
+				},
+			],
+			callback: async (action: any) => {
+				const newsroomTag = action.options.newsroomTag as string
+				const crosspoint = action.options.crosspoint as string
+				if (!newsroomTag || !crosspoint) {
+					self.logMsg('warn', 'Update crosspoint action called without a newsroom tag or crosspoint - skipping')
+					return
+				}
+				await self.mosartAPI.updateTimelineFields(action.options.target as BusType, { newsroomTag, crosspoint })
+			},
+		},
+		device_standby: {
+			name: 'Set device type standby',
+			description: 'Sets standby for all devices of a type',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Device type',
+					id: 'type',
+					choices: deviceTypeChoices(deviceTypes),
+					default: 'switcher',
+				},
+				standbyOption,
+			],
+			callback: async (action: any) => {
+				await self.mosartAPI.setDeviceStandby(action.options.type as DeviceApiType, action.options.standby === 'true')
+			},
+		},
+		device_standby_by_id: {
+			name: 'Set device standby by ID',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Device type',
+					id: 'type',
+					choices: deviceTypeChoices(deviceTypesWithId),
+					default: 'graphics',
+				},
+				{
+					type: 'textinput',
+					label: 'ID',
+					id: 'id',
+					tooltip: 'The device or controller ID. For graphics this can be the engine ID or destination name',
+					default: '',
+				},
+				standbyOption,
+			],
+			callback: async (action: any) => {
+				const id = action.options.id as string
+				if (!id) {
+					self.logMsg('warn', 'Set device standby by ID action called without an ID - skipping')
+					return
+				}
+				await self.mosartAPI.setDeviceStandbyById(
+					action.options.type as DeviceApiTypeWithId,
+					id,
+					action.options.standby === 'true',
+				)
+			},
+		},
+		robotic_camera_standby: {
+			name: 'Set robotic camera standby',
+			options: [
+				{
+					type: 'number',
+					label: 'Controller ID',
+					id: 'controllerId',
+					default: 1,
+					min: 0,
+					max: 10000,
+				},
+				{
+					type: 'number',
+					label: 'Device ID',
+					id: 'deviceId',
+					default: 1,
+					min: 0,
+					max: 10000,
+				},
+				standbyOption,
+			],
+			callback: async (action: any) => {
+				await self.mosartAPI.setDeviceStandbyByIds(
+					'robotic-camera',
+					action.options.controllerId as number,
+					action.options.deviceId as number,
+					action.options.standby === 'true',
+				)
+			},
+		},
+		update_nrcs_settings: {
+			name: 'Update NRCS settings',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Settings (JSON)',
+					id: 'settings',
+					tooltip: 'The NRCS settings to update, e.g. {"useBackServer": true}',
+					default: '{}',
+				},
+			],
+			callback: async (action: any) => {
+				const settings = parseJsonOption(self, action.options.settings as string)
+				if (!settings) return
+				await self.mosartAPI.updateNrcsSettings(settings)
+			},
+		},
+		server_active: {
+			name: 'Set server active',
+			description: 'Takes the Mosart server out of idle, like clicking the backend status indicator in the Mosart GUI',
+			options: [],
+			callback: async () => {
+				await self.mosartAPI.setServerActive()
+			},
+		},
+		set_fader_level: {
+			name: 'Set fader level',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Fader name',
+					id: 'faderName',
+					tooltip: 'The fader/channel name, e.g. CHN0',
+					default: '',
+				},
+				{
+					type: 'number',
+					label: 'Level',
+					id: 'level',
+					tooltip: 'The normalized level to set, e.g. 0.75',
+					default: 0.75,
+					min: 0,
+					max: 1,
+					step: 0.01,
+				},
+			],
+			callback: async (action: any) => {
+				const faderName = action.options.faderName as string
+				if (!faderName) {
+					self.logMsg('warn', 'Set fader level action called without a fader name - skipping')
+					return
+				}
+				await self.mosartAPI.setFaderLevel(faderName, action.options.level as number)
+			},
+		},
+		update_media_server: {
+			name: 'Update media server',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Server name',
+					id: 'name',
+					default: '',
+				},
+				{
+					type: 'textinput',
+					label: 'Settings (JSON)',
+					id: 'settings',
+					tooltip: 'The properties to update, e.g. {"enable": true, "server": "localhost", "port": 3381}',
+					default: '{"enable": true}',
+				},
+			],
+			callback: async (action: any) => {
+				const name = action.options.name as string
+				if (!name) {
+					self.logMsg('warn', 'Update media server action called without a server name - skipping')
+					return
+				}
+				const settings = parseJsonOption(self, action.options.settings as string)
+				if (!settings) return
+				await self.mosartAPI.updateMediaServer(name, settings)
+			},
+		},
+		upsert_named_overlay: {
+			name: 'Create/update named overlay',
+			options: [
+				{
+					type: 'dropdown',
+					label: 'Mode',
+					id: 'mode',
+					choices: [
+						{ id: 'create', label: 'Create' },
+						{ id: 'update', label: 'Update' },
+					],
+					default: 'create',
+				},
+				{
+					type: 'textinput',
+					label: 'Slug',
+					id: 'slug',
+					default: '',
+				},
+				{
+					type: 'textinput',
+					label: 'Item (JSON)',
+					id: 'item',
+					tooltip:
+						'Named overlay properties, e.g. {"templatetype": "...", "contentItems": [{"elementName": "title", "value": "..."}]}',
+					default: '{}',
+				},
+			],
+			callback: async (action: any) => {
+				const slug = action.options.slug as string
+				if (!slug) {
+					self.logMsg('warn', 'Named overlay action called without a slug - skipping')
+					return
+				}
+				const item = parseJsonOption(self, action.options.item as string)
+				if (!item) return
+				if (action.options.mode === 'update') {
+					await self.mosartAPI.updateNamedOverlay(slug, { ...item, slug })
+				} else {
+					await self.mosartAPI.createNamedOverlay({ ...item, slug })
+				}
+			},
+		},
+		delete_named_overlay: {
+			name: 'Delete named overlay',
+			options: [
+				{
+					type: 'textinput',
+					label: 'Slug',
+					id: 'slug',
+					default: '',
+				},
+			],
+			callback: async (action: any) => {
+				const slug = action.options.slug as string
+				if (!slug) {
+					self.logMsg('warn', 'Delete named overlay action called without a slug - skipping')
+					return
+				}
+				await self.mosartAPI.deleteNamedOverlay(slug)
 			},
 		},
 		// Control Commands
@@ -1411,4 +1764,15 @@ export function UpdateActions(self: MosartInstance): void {
 	}
 
 	self.setActionDefinitions(actions)
+}
+
+function parseJsonOption(self: MosartInstance, value: string): Record<string, any> | null {
+	try {
+		const parsed = JSON.parse(value || '{}')
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
+		self.logMsg('warn', 'Expected a JSON object')
+	} catch (error) {
+		self.logMsg('warn', `Invalid JSON: ${error instanceof Error ? error.message : String(error)}`)
+	}
+	return null
 }

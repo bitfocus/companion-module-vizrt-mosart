@@ -13,6 +13,8 @@ export interface ModuleConfig {
 	useHttps?: boolean
 	connectionString?: string
 	enableOverlayList?: boolean
+	enableFaderLevels?: boolean
+	enableOnAirGraphics?: boolean
 	presetCamHardName?: string
 	presetCamSoftName?: string
 	presetExtName?: string
@@ -137,6 +139,28 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			type: 'checkbox',
 			id: 'enableOverlayList',
 			label: 'Enable Overlay List (Experimental) - minimum Mosart version 5.13.0',
+			width: 12,
+			default: false,
+		},
+		{
+			type: 'static-text',
+			id: 'optionalPollingInfo',
+			width: 12,
+			label: 'Additional State Polling',
+			value:
+				'Each option below adds one request per poll interval. Enable only what your buttons use.',
+		},
+		{
+			type: 'checkbox',
+			id: 'enableFaderLevels',
+			label: 'Poll fader levels (Fader Level feedback and fader_* variables)',
+			width: 12,
+			default: false,
+		},
+		{
+			type: 'checkbox',
+			id: 'enableOnAirGraphics',
+			label: 'Poll on-air graphics (Graphic On Air feedback)',
 			width: 12,
 			default: false,
 		},

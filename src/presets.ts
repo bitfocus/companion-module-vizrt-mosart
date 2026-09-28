@@ -1,5 +1,14 @@
 import type { MosartInstance } from './main.js'
 import { combineRgb, CompanionPresetDefinitions } from '@companion-module/base'
+import { AUDIO_TOGGLE_LABELS } from './api.js'
+
+// Audio toggles that have a matching action in the 'audio' control command.
+// The rest have no known command, so their presets are status indicators only.
+const AUDIO_TOGGLE_ACTIONS: Record<string, string> = {
+	fadeManual: 'FADE_MANUAL',
+	useLevel2Preview: 'SET_LEVEL_2_PREVIEW',
+	useLevel2OnAir: 'SET_LEVEL_2_ONAIR',
+}
 
 export function UpdatePresetDefinitions(self: MosartInstance): void {
 	const presets: CompanionPresetDefinitions = {
@@ -60,6 +69,66 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 				},
 			],
 		},
+	}
+
+	presets['server_active'] = {
+		type: 'button',
+		category: 'Rundown',
+		name: 'Set Server Active',
+		style: {
+			text: 'Server\nIdle',
+			size: '14',
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(0, 0, 0),
+		},
+		steps: [
+			{
+				down: [{ actionId: 'server_active', options: {} }],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'ServerState',
+				options: { state: 'Active' },
+				style: {
+					text: 'Server\nActive',
+					bgcolor: combineRgb(64, 253, 143),
+					color: combineRgb(0, 0, 0),
+				},
+			},
+		],
+	}
+
+	for (const [key, label] of Object.entries(AUDIO_TOGGLE_LABELS)) {
+		const action = AUDIO_TOGGLE_ACTIONS[key]
+		presets[`audio_toggle_${key}`] = {
+			type: 'button',
+			category: 'Audio',
+			name: label,
+			style: {
+				text: label,
+				size: '14',
+				color: combineRgb(255, 255, 255),
+				bgcolor: combineRgb(0, 0, 0),
+			},
+			steps: [
+				{
+					down: action ? [{ actionId: 'audio', options: { Action: action, Faderate: 0 } }] : [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'AudioToggleStatus',
+					options: { toggle: key },
+					style: {
+						bgcolor: combineRgb(255, 165, 0),
+						color: combineRgb(0, 0, 0),
+					},
+				},
+			],
+		}
 	}
 
 	presets['header1'] = {

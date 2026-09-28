@@ -102,9 +102,36 @@ const upgradeV1_4_0: CompanionStaticUpgradeScript<ModuleConfig> = (
 	return changes
 }
 
+/**
+ * v1.5.0: Added optional polling of fader levels and on-air graphics. Both
+ * default to off for existing installations, so they make no extra requests
+ * until enabled.
+ */
+const upgradeV1_5_0: CompanionStaticUpgradeScript<ModuleConfig> = (
+	_context,
+	props,
+): CompanionStaticUpgradeResult<ModuleConfig> => {
+	const config: any = props.config
+	const changes: CompanionStaticUpgradeResult<ModuleConfig> = {
+		updatedConfig: null,
+		updatedActions: [],
+		updatedFeedbacks: [],
+	}
+
+	if (!config) return changes
+
+	if (config.enableFaderLevels === undefined) config.enableFaderLevels = false
+	if (config.enableOnAirGraphics === undefined) config.enableOnAirGraphics = false
+
+	changes.updatedConfig = config
+
+	return changes
+}
+
 export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig>[] = [
 	upgradeV1_1_0,
 	upgradeV1_2_0,
 	upgradeV1_3_0,
 	upgradeV1_4_0,
+	upgradeV1_5_0,
 ]

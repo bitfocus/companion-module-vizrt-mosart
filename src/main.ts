@@ -187,7 +187,8 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 			this.updateStatus(InstanceStatus.ConnectionFailure)
 		}
 
-		// Update presets when config changes (especially enableOverlayList)
+		// Variables and presets depend on config (overlay list, fader levels, on-air graphics)
+		this.updateVariableDefinitions()
 		this.updatePresetDefinitions()
 
 		return
