@@ -1,7 +1,6 @@
 import { InstanceStatus } from '@companion-module/base'
 import got, { OptionsOfTextResponseBody } from 'got'
 import { MosartInstance } from './main.js'
-
 export interface OverlayField {
 	name: string
 	value: string
@@ -165,6 +164,24 @@ export function faderVariableId(faderName: string): string {
 	return `fader_${faderName.replace(/[^a-zA-Z0-9_]/g, '_')}`
 }
 
+/**
+ * Maps each channel to a unique variable id. Names that sanitize to the same
+ * id (e.g. "A+B" and "A-B") get a numeric suffix; `channels` must be sorted so
+ * the suffixes stay stable between polls.
+ */
+export function buildFaderVariableIds(channels: string[]): Map<string, string> {
+	const ids = new Map<string, string>()
+	const used = new Set<string>()
+	for (const name of channels) {
+		const base = faderVariableId(name)
+		let id = base
+		for (let n = 2; used.has(id); n++) id = `${base}_${n}`
+		used.add(id)
+		ids.set(name, id)
+	}
+	return ids
+}
+
 /** The pilot/graphics id lives in the `graphics_id` field rather than on the item itself. */
 export function graphicsIdOf(graphic: OverlayGraphic): string {
 	return graphic.fields?.find((field) => field.name === 'graphics_id')?.value ?? ''
@@ -240,6 +257,8 @@ export type DeviceApiType =
 	| 'virtual-set'
 	| 'weather'
 
+const UNSUPPORTED_ENDPOINT_RETRY_MS = 60_000
+
 /** Returned by a background request that failed, so the caller can tell a 404 from a timeout. */
 export interface BackgroundFailure {
 	failed: true
@@ -269,11 +288,19 @@ export class MosartAPI {
 	// Kept across disconnects so fader variables stay defined during an outage;
 	// only replaced when the server reports a different set of channels.
 	private faderChannels: string[] = []
+	private faderVariableIds = new Map<string, string>()
 	onAirGraphics: OverlayGraphic[]
 	mosartVersion: string
-	// Optional endpoints that failed (e.g. older servers without them) are
-	// skipped until the next reconnect instead of being retried every poll.
-	private unsupportedEndpoints = new Set<string>()
+	// Optional endpoints that returned 404 (e.g. older servers without them, or
+	// a state like "no rundown loaded") are retried after a cooldown rather
+	// than every poll. Maps path to the time it may be retried.
+	private unsupportedEndpoints = new Map<string, number>()
+	private reportedUnsupported = new Set<string>()
+	private optionalPollInFlight = false
+	private optionalStateCleared = true
+	// Set by destroy(); an instance replaced after a host change can still have
+	// requests in flight, and their results must not reach the module.
+	private destroyed = false
 
 	constructor(instance: MosartInstance) {
 		this.instance = instance
@@ -323,6 +350,7 @@ export class MosartAPI {
 	}
 
 	async destroy(): Promise<void> {
+		this.destroyed = true
 		// Reset all statuses
 		this.status = false
 		this.state = ''
@@ -350,6 +378,10 @@ export class MosartAPI {
 
 	getKnownFaderChannels(): string[] {
 		return this.faderChannels
+	}
+
+	getFaderVariableIds(): ReadonlyMap<string, string> {
+		return this.faderVariableIds
 	}
 
 	getTimelineStatus(): boolean {
@@ -586,7 +618,7 @@ export class MosartAPI {
 		const params: Record<string, any> = {}
 		if (target !== undefined) params.target = target
 		if (insert !== undefined) params.insert = insert
-		await this.sendRequest(`assets/template/${mosartItemId}/take`, params, 'POST')
+		await this.sendRequest(`assets/template/${encodeURIComponent(mosartItemId)}/take`, params, 'POST')
 	}
 
 	// Devices
@@ -596,7 +628,7 @@ export class MosartAPI {
 	}
 
 	async setDeviceStandbyById(type: DeviceApiTypeWithId, id: string, standby: boolean): Promise<void> {
-		await this.sendRequest(`devices/${type}/${id}`, {}, 'PATCH', { standby })
+		await this.sendRequest(`devices/${type}/${encodeURIComponent(id)}`, {}, 'PATCH', { standby })
 	}
 
 	async setDeviceStandbyByIds(
@@ -617,21 +649,36 @@ export class MosartAPI {
 	/**
 	 * Fetches an optional state endpoint during a poll. `apply` receives the
 	 * parsed body, or null when the server returned no content or the request
-	 * failed. An endpoint the server does not have (404) is skipped until the
-	 * next reconnect; any other failure is retried on the next poll.
+	 * failed. An endpoint that returns 404 is skipped for a cooldown, or until
+	 * the next reconnect; any other failure is retried on the next poll.
 	 */
-	private async pollOptional(path: string, query: Record<string, any>, apply: (data: unknown) => void): Promise<void> {
-		if (this.unsupportedEndpoints.has(path)) return
+	private async pollOptional(
+		path: string,
+		query: Record<string, any>,
+		apply: (data: unknown) => void,
+		notFoundMeansEmpty = false,
+	): Promise<void> {
+		const retryAt = this.unsupportedEndpoints.get(path)
+		if (retryAt !== undefined && Date.now() < retryAt) return
 		const response = await this.sendRequest(path, query, 'GET', undefined, true)
+		// The connection may have dropped (and the state been cleared) or this
+		// instance been replaced while the request was in flight.
+		if (this.destroyed || !this.connected) return
 		if (response === null) return // host not configured
 		if ((response as BackgroundFailure).failed) {
-			if ((response as BackgroundFailure).statusCode === 404) {
-				this.unsupportedEndpoints.add(path)
-				this.instance.logMsg('info', `${path} is not available on this server; skipping it until reconnect`)
+			if ((response as BackgroundFailure).statusCode === 404 && !notFoundMeansEmpty) {
+				this.unsupportedEndpoints.set(path, Date.now() + UNSUPPORTED_ENDPOINT_RETRY_MS)
+				const firstTime = !this.reportedUnsupported.has(path)
+				this.reportedUnsupported.add(path)
+				this.instance.logMsg(
+					firstTime ? 'info' : 'debug',
+					`${path} returned 404; retrying in ${UNSUPPORTED_ENDPOINT_RETRY_MS / 1000}s`,
+				)
 			}
 			apply(null)
 			return
 		}
+		this.unsupportedEndpoints.delete(path)
 		try {
 			apply(response.body ? JSON.parse(response.body) : null)
 		} catch (error) {
@@ -643,13 +690,44 @@ export class MosartAPI {
 		}
 	}
 
+	/**
+	 * Runs the optional polls without holding up the status poll, so a slow
+	 * endpoint cannot stretch the poll interval. A run still in progress is not
+	 * overlapped; the next status poll simply skips it.
+	 */
+	private startOptionalPoll(): void {
+		if (this.optionalPollInFlight) return
+		this.optionalPollInFlight = true
+		this.pollOptionalState()
+			.catch((error) => {
+				this.instance.logMsg(
+					'debug',
+					`Optional state poll failed: ${error instanceof Error ? error.message : String(error)}`,
+				)
+			})
+			.finally(() => {
+				this.optionalPollInFlight = false
+			})
+	}
+
 	private async pollOptionalState(): Promise<void> {
-		const polls = [
-			this.pollOptional('devices/audio-toggles', {}, (data) => this.setAudioToggles(parseAudioToggles(data))),
-			this.pollOptional('timeline', {}, (data) => this.setTimelineInfo((data as Timeline | null) ?? null)),
-		]
+		const config = this.instance.config
+		const polls: Promise<void>[] = []
+		this.optionalStateCleared = false
 		// A feature switched off in the config has its last state cleared once.
-		if (this.instance.config.enableFaderLevels) {
+		if (config.enableAudioToggles) {
+			polls.push(
+				this.pollOptional('devices/audio-toggles', {}, (data) => this.setAudioToggles(parseAudioToggles(data))),
+			)
+		} else if (Object.keys(this.audioToggles).length > 0) {
+			this.setAudioToggles({})
+		}
+		if (config.enableTimelineInfo) {
+			polls.push(this.pollOptional('timeline', {}, (data) => this.setTimelineInfo((data as Timeline | null) ?? null)))
+		} else if (this.timelineInfo !== null) {
+			this.setTimelineInfo(null)
+		}
+		if (config.enableFaderLevels) {
 			polls.push(
 				this.pollOptional('faders/levels', {}, (data) =>
 					this.setFaderLevels((data as Record<string, AudioLevel> | null) ?? {}),
@@ -658,10 +736,15 @@ export class MosartAPI {
 		} else if (this.faderChannels.length > 0) {
 			this.setFaderLevels({}, true)
 		}
-		if (this.instance.config.enableOnAirGraphics) {
+		if (config.enableOnAirGraphics) {
 			polls.push(
-				this.pollOptional('assets/graphics', { onair: true }, (data) =>
-					this.setOnAirGraphics(Array.isArray(data) ? (data as OverlayGraphic[]) : []),
+				// This endpoint's 404 reflects rundown state (e.g. none loaded), not a
+				// missing endpoint, so it is treated as nothing on air and not paused.
+				this.pollOptional(
+					'assets/graphics',
+					{ onair: true },
+					(data) => this.setOnAirGraphics(Array.isArray(data) ? (data as OverlayGraphic[]) : []),
+					true,
 				),
 			)
 		} else if (this.onAirGraphics.length > 0) {
@@ -670,8 +753,13 @@ export class MosartAPI {
 		await Promise.all(polls)
 	}
 
-	/** Clears every optional state when the connection is lost. */
+	/**
+	 * Clears every optional state when the connection is lost. Failed polls
+	 * repeat while the server is down, so this only does work once per outage.
+	 */
 	private clearOptionalState(): void {
+		if (this.optionalStateCleared) return
+		this.optionalStateCleared = true
 		this.setAudioToggles({})
 		this.setTimelineInfo(null)
 		this.setFaderLevels({})
@@ -679,16 +767,20 @@ export class MosartAPI {
 	}
 
 	private setAudioToggles(toggles: AudioToggles): void {
+		if (this.destroyed) return
 		this.audioToggles = toggles
-		const values: Record<string, string> = {}
-		for (const key of Object.keys(AUDIO_TOGGLE_LABELS)) {
-			values[`audioToggle_${key}`] = key in toggles ? toggles[key].toString() : ''
+		if (this.instance.config.enableAudioToggles) {
+			const values: Record<string, string> = {}
+			for (const key of Object.keys(AUDIO_TOGGLE_LABELS)) {
+				values[`audioToggle_${key}`] = key in toggles ? toggles[key].toString() : ''
+			}
+			this.instance.setVariableValues(values)
 		}
-		this.instance.setVariableValues(values)
 		this.instance.checkFeedbacks('AudioToggleStatus')
 	}
 
 	private setTimelineInfo(timeline: Timeline | null): void {
+		if (this.destroyed) return
 		// Mosart reports an empty story/item as "-", which is normalized to ''
 		// so it neither shows in variables nor matches in feedbacks.
 		const clean = (value: string | null | undefined): string => (value && value !== '-' ? value : '')
@@ -703,7 +795,7 @@ export class MosartAPI {
 			values[`timeline_${position}_id`] = item?.id ?? ''
 			values[`timeline_${position}_slug`] = item?.slug ?? ''
 		}
-		this.instance.setVariableValues(values)
+		if (this.instance.config.enableTimelineInfo) this.instance.setVariableValues(values)
 		this.instance.checkFeedbacks('TimelineItemMatch')
 	}
 
@@ -713,41 +805,49 @@ export class MosartAPI {
 	 * `forgetChannels` drops the channels too, for when the feature is disabled.
 	 */
 	private setFaderLevels(levels: Record<string, AudioLevel>, forgetChannels = false): void {
+		if (this.destroyed) return
 		this.faderLevels = {}
 		for (const [name, level] of Object.entries(levels)) {
 			if (typeof level?.level === 'number') this.faderLevels[level.faderName ?? name] = level.level
 		}
 
-		// Fader variables and the feedback's channel dropdown are built from the
-		// channel list, so they are redefined whenever the set of channels changes.
-		const previousChannels = this.faderChannels
+		// Fader variables, presets and the feedback's channel dropdown are built from
+		// the channel list, so they are redefined whenever the set of channels changes.
+		const previousIds = this.faderVariableIds
 		const channels = Object.keys(this.faderLevels).sort((a, b) => a.localeCompare(b))
-		if ((channels.length > 0 || forgetChannels) && channels.join('\n') !== previousChannels.join('\n')) {
+		if ((channels.length > 0 || forgetChannels) && channels.join('\n') !== this.faderChannels.join('\n')) {
 			this.faderChannels = channels
+			this.faderVariableIds = buildFaderVariableIds(channels)
 			this.instance.updateVariableDefinitions()
 			this.instance.updateFeedbacks()
+			this.instance.updatePresetDefinitions()
 		}
 
-		// Includes dropped channels so their last value is blanked, not left stale.
-		const values: Record<string, string> = {}
-		for (const name of new Set([...previousChannels, ...this.faderChannels])) {
-			values[faderVariableId(name)] = this.faderLevels[name]?.toFixed(2) ?? ''
+		if (this.instance.config.enableFaderLevels) {
+			// Dropped channels are blanked first so their last value is not left stale.
+			const values: Record<string, string> = {}
+			for (const id of previousIds.values()) values[id] = ''
+			for (const [name, id] of this.faderVariableIds) values[id] = this.faderLevels[name]?.toFixed(2) ?? ''
+			this.instance.setVariableValues(values)
 		}
-		this.instance.setVariableValues(values)
 		this.instance.checkFeedbacks('FaderLevel')
 	}
 
 	private setOnAirGraphics(graphics: OverlayGraphic[]): void {
+		if (this.destroyed) return
 		this.onAirGraphics = graphics
-		this.instance.setVariableValues({
-			onair_graphics_count: this.instance.config.enableOnAirGraphics ? graphics.length.toString() : '',
-			onair_graphics_slugs: graphics.map((graphic) => graphic.slug).join(', '),
-		})
+		if (this.instance.config.enableOnAirGraphics) {
+			this.instance.setVariableValues({
+				onair_graphics_count: graphics.length.toString(),
+				onair_graphics_slugs: graphics.map((graphic) => graphic.slug).join(', '),
+			})
+		}
 		this.instance.checkFeedbacks('GraphicOnAir')
 	}
 
 	private async fetchBuildInfo(): Promise<void> {
 		const response = await this.sendRequest('build', {}, 'GET', undefined, true)
+		if (this.destroyed || !this.connected) return
 		let build: Build | null = null
 		try {
 			build = response?.body ? (JSON.parse(response.body) as Build) : null
@@ -873,7 +973,11 @@ export class MosartAPI {
 
 		if (!wasConnected && state) {
 			this.unsupportedEndpoints.clear()
+			this.reportedUnsupported.clear()
 			void this.fetchBuildInfo()
+		} else if (wasConnected && !state) {
+			this.mosartVersion = ''
+			this.instance.setVariableValues({ mosartVersion: '' })
 		}
 
 		// If we just connected (transition from false to true), fetch overlay list
@@ -891,6 +995,7 @@ export class MosartAPI {
 		}
 
 		const response = await this.getApiStatus()
+		if (this.destroyed) return
 		this.instance.logMsg('debug', `Poll response: ${response === null ? 'no response' : response.statusCode}`)
 		if (response === null) {
 			this.status = false
@@ -959,7 +1064,7 @@ export class MosartAPI {
 			'ServerState',
 		)
 		this.setConnected(true)
-		await this.pollOptionalState()
+		this.startOptionalPoll()
 	}
 
 	async connect(): Promise<boolean> {

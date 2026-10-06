@@ -1,6 +1,7 @@
 import type { CompanionStaticUpgradeScript, CompanionStaticUpgradeResult } from '@companion-module/base'
 import type { ModuleConfig } from './config.js'
 import { DEFAULT_LOG_LEVEL } from './logging.js'
+import { PRESET_GROUP_COUNT, presetGroupDefaults, presetGroupKey, type PresetGroup } from './presetGroups.js'
 
 /**
  * v1.1.0: Added preset customization fields and overlay list feature.
@@ -103,9 +104,12 @@ const upgradeV1_4_0: CompanionStaticUpgradeScript<ModuleConfig> = (
 }
 
 /**
- * v1.5.0: Added optional polling of fader levels and on-air graphics. Both
- * default to off for existing installations, so they make no extra requests
- * until enabled.
+ * v1.5.0: Added optional state polling (timeline, audio toggles, fader levels,
+ * on-air graphics), all off so existing installations make no extra requests
+ * until enabled. The fixed camera/external presets became configurable preset
+ * groups with an English default label ("CAM"); existing instances keep their
+ * previous labels, including the hardcoded "KAM". The group fields sit behind
+ * a "show" checkbox, which starts ticked for instances that had changed a label.
  */
 const upgradeV1_5_0: CompanionStaticUpgradeScript<ModuleConfig> = (
 	_context,
@@ -120,8 +124,33 @@ const upgradeV1_5_0: CompanionStaticUpgradeScript<ModuleConfig> = (
 
 	if (!config) return changes
 
+	if (config.enableTimelineInfo === undefined) config.enableTimelineInfo = false
+	if (config.enableAudioToggles === undefined) config.enableAudioToggles = false
 	if (config.enableFaderLevels === undefined) config.enableFaderLevels = false
 	if (config.enableOnAirGraphics === undefined) config.enableOnAirGraphics = false
+
+	// The fixed camera/external presets became preset group slots 1-3. Their
+	// labels used to be "KAM {n}" plus the configured hard/soft/external names.
+	const oldLabel = (key: string, fallback: string): string => {
+		const value = typeof config[key] === 'string' ? config[key].trim() : ''
+		return value !== '' ? value : fallback
+	}
+	const hard = oldLabel('presetCamHardName', 'HARD')
+	const soft = oldLabel('presetCamSoftName', 'SOFT')
+	const ext = oldLabel('presetExtName', 'EXT')
+	config[presetGroupKey(1, 'label')] ??= `KAM {n}\\n${hard}`
+	config[presetGroupKey(2, 'label')] ??= `KAM {n}\\n${soft}`
+	config[presetGroupKey(3, 'label')] ??= `${ext} {n}`
+	// Field defaults only apply to new instances, so store them for the config form to show.
+	for (let slot = 1; slot <= PRESET_GROUP_COUNT; slot++) {
+		for (const [field, value] of Object.entries(presetGroupDefaults(slot))) {
+			config[presetGroupKey(slot, field as keyof PresetGroup)] ??= value
+		}
+	}
+	config.showPresetGroups ??= hard !== 'HARD' || soft !== 'SOFT' || ext !== 'EXT'
+	delete config.presetCamHardName
+	delete config.presetCamSoftName
+	delete config.presetExtName
 
 	changes.updatedConfig = config
 

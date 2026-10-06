@@ -1,5 +1,6 @@
 import { type SomeCompanionConfigField } from '@companion-module/base'
 import { DEFAULT_LOG_LEVEL, LOG_LEVEL_CHOICES, type LogLevel } from './logging.js'
+import { GetPresetGroupConfigFields } from './presetGroups.js'
 
 export const DEFAULT_POLL_INTERVAL_MS = 1000
 
@@ -13,11 +14,14 @@ export interface ModuleConfig {
 	useHttps?: boolean
 	connectionString?: string
 	enableOverlayList?: boolean
+	enableTimelineInfo?: boolean
+	enableAudioToggles?: boolean
 	enableFaderLevels?: boolean
 	enableOnAirGraphics?: boolean
-	presetCamHardName?: string
-	presetCamSoftName?: string
-	presetExtName?: string
+	// Only toggles visibility of the preset group fields; their values apply either way.
+	showPresetGroups?: boolean
+	// Preset group slots, e.g. presetGroup1_variant; read through readPresetGroup().
+	[presetGroupField: `presetGroup${number}_${string}`]: unknown
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
@@ -54,7 +58,6 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'host',
 			label: 'Target IP or Hostname',
 			width: 8,
-			required: true,
 		},
 		{
 			type: 'number',
@@ -97,48 +100,16 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 		},
 		{
 			type: 'static-text',
-			id: 'presetCustomizationInfo',
-			width: 12,
-			label: 'Preset Customizations',
-			value:
-				'Customize the text displayed on preset buttons for cameras and external sources. Leave blank to use defaults.',
-		},
-		{
-			type: 'textinput',
-			id: 'presetCamHardName',
-			label: 'Camera Hard Preset Name',
-			width: 4,
-			default: 'HARD',
-			tooltip: 'Text to display for hard camera presets (e.g., "HARD", "H", "DIR")',
-		},
-		{
-			type: 'textinput',
-			id: 'presetCamSoftName',
-			label: 'Camera Soft Preset Name',
-			width: 4,
-			default: 'SOFT',
-			tooltip: 'Text to display for soft camera presets (e.g., "SOFT", "S", "MIX")',
-		},
-		{
-			type: 'textinput',
-			id: 'presetExtName',
-			label: 'External Preset Name',
-			width: 4,
-			default: 'EXT',
-			tooltip: 'Text to display for external source presets (e.g., "EXT", "LIVE", "FEED")',
-		},
-		{
-			type: 'static-text',
 			id: 'overlayListInfo',
 			width: 12,
-			label: 'Overlay List (Experimental)',
+			label: 'Overlay List',
 			value:
 				'Enable this to fetch and track overlay graphics from the Mosart API. This will create variables for each story containing overlay information.',
 		},
 		{
 			type: 'checkbox',
 			id: 'enableOverlayList',
-			label: 'Enable Overlay List (Experimental) - minimum Mosart version 5.13.0',
+			label: 'Enable Overlay List (minimum Mosart version 5.13.0)',
 			width: 12,
 			default: false,
 		},
@@ -147,8 +118,21 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'optionalPollingInfo',
 			width: 12,
 			label: 'Additional State Polling',
-			value:
-				'Each option below adds one request per poll interval. Enable only what your buttons use.',
+			value: 'Each option below adds one request per poll interval. Enable only what your buttons use.',
+		},
+		{
+			type: 'checkbox',
+			id: 'enableTimelineInfo',
+			label: 'Poll timeline stories/items (Timeline Story/Item Match feedback and timeline_* variables)',
+			width: 12,
+			default: false,
+		},
+		{
+			type: 'checkbox',
+			id: 'enableAudioToggles',
+			label: 'Poll audio toggles (Audio Toggle State feedback and audioToggle_* variables)',
+			width: 12,
+			default: false,
 		},
 		{
 			type: 'checkbox',
@@ -164,5 +148,6 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 12,
 			default: false,
 		},
+		...GetPresetGroupConfigFields(),
 	]
 }

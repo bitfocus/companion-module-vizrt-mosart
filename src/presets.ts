@@ -1,14 +1,7 @@
 import type { MosartInstance } from './main.js'
 import { combineRgb, CompanionPresetDefinitions } from '@companion-module/base'
-import { AUDIO_TOGGLE_LABELS } from './api.js'
-
-// Audio toggles that have a matching action in the 'audio' control command.
-// The rest have no known command, so their presets are status indicators only.
-const AUDIO_TOGGLE_ACTIONS: Record<string, string> = {
-	fadeManual: 'FADE_MANUAL',
-	useLevel2Preview: 'SET_LEVEL_2_PREVIEW',
-	useLevel2OnAir: 'SET_LEVEL_2_ONAIR',
-}
+import { AddPresetGroupPresets } from './presetGroups.js'
+import { AddStatePresets } from './statePresets.js'
 
 export function UpdatePresetDefinitions(self: MosartInstance): void {
 	const presets: CompanionPresetDefinitions = {
@@ -100,165 +93,7 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		],
 	}
 
-	for (const [key, label] of Object.entries(AUDIO_TOGGLE_LABELS)) {
-		const action = AUDIO_TOGGLE_ACTIONS[key]
-		presets[`audio_toggle_${key}`] = {
-			type: 'button',
-			category: 'Audio',
-			name: label,
-			style: {
-				text: label,
-				size: '14',
-				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(0, 0, 0),
-			},
-			steps: [
-				{
-					down: action ? [{ actionId: 'audio', options: { Action: action, Faderate: 0 } }] : [],
-					up: [],
-				},
-			],
-			feedbacks: [
-				{
-					feedbackId: 'AudioToggleStatus',
-					options: { toggle: key },
-					style: {
-						bgcolor: combineRgb(255, 165, 0),
-						color: combineRgb(0, 0, 0),
-					},
-				},
-			],
-		}
-	}
-
-	presets['header1'] = {
-		category: `Camera`,
-		name: 'Hard Cameras',
-		type: 'text',
-		text: 'Hard Camera Presets',
-	}
-
-	const camHardName = self.config.presetCamHardName || 'HARD'
-	for (let i = 1; i <= 10; i++) {
-		presets[`cam_hard_${i}`] = {
-			type: 'button',
-			category: 'Camera',
-			name: `Camera ${i}`,
-			style: {
-				text: `KAM ${i}\n${camHardName}`,
-				alignment: 'center:top',
-				size: 16,
-				color: combineRgb(0, 0, 0),
-				bgcolor: combineRgb(128, 255, 128),
-				pngalignment: 'center:bottom',
-				png64:
-					'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAhCAYAAABX5MJvAAAACXBIWXMAAAsSAAALEgHS3X78AAABHElEQVRYhe2W203DQBBFz0X8kxJSgkswHbiEUAmUkA5ICSkhdGA6SAmmgstH1oIYrx9rOY6QrzQ/u7Ozx5rxzMo2S+thaQBYIX60QtS6bwhJhaSzJPdYKamYRGG71YAj4BG2i8Xqsy6IYiSEgW0KRDQdto+21WXAS+NYUloeUw79Aj1IAtiGpTIljmKzQ1KeEK+yPR4kUg9nxtdDbYfJhQnkEwB8+a4/MTfAHjgBWXN/Uk0MkaQsXP4UljZNn1k7pqRdA6BVs0FIegPe+wBmhQBehzre9wC7peaEeAa+FoWwfeLScz4XgwggZQD56PJra1bVxLuvUmC7AvLw8Mm4jIRrRWbHnrSWXZHwuIlO0Vvq3/+ig7VC1Fohan0DxiuWLlerpn4AAAAASUVORK5CYII=',
-			},
-			steps: [
-				{
-					down: [
-						{
-							actionId: 'template',
-							options: {
-								// options values to use
-								type: 'Camera',
-								variant: `${i}HARD`,
-								bus: 'Program',
-							},
-						},
-					],
-					up: [],
-				},
-			],
-			feedbacks: [],
-		}
-	}
-
-	presets['header2'] = {
-		category: `Camera`,
-		name: 'Soft Cameras',
-		type: 'text',
-		text: 'Soft Camera Presets',
-	}
-
-	const camSoftName = self.config.presetCamSoftName || 'SOFT'
-	for (let i = 1; i <= 10; i++) {
-		presets[`cam_soft_${i}`] = {
-			type: 'button',
-			category: 'Camera',
-			name: `Camera ${i}`,
-			style: {
-				text: `KAM ${i}\n${camSoftName}`,
-				alignment: 'center:top',
-				size: 16,
-				color: combineRgb(0, 0, 0),
-				bgcolor: combineRgb(128, 255, 128),
-				pngalignment: 'center:bottom',
-				png64:
-					'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAhCAYAAABX5MJvAAAACXBIWXMAAAsSAAALEgHS3X78AAABHElEQVRYhe2W203DQBBFz0X8kxJSgkswHbiEUAmUkA5ICSkhdGA6SAmmgstH1oIYrx9rOY6QrzQ/u7Ozx5rxzMo2S+thaQBYIX60QtS6bwhJhaSzJPdYKamYRGG71YAj4BG2i8Xqsy6IYiSEgW0KRDQdto+21WXAS+NYUloeUw79Aj1IAtiGpTIljmKzQ1KeEK+yPR4kUg9nxtdDbYfJhQnkEwB8+a4/MTfAHjgBWXN/Uk0MkaQsXP4UljZNn1k7pqRdA6BVs0FIegPe+wBmhQBehzre9wC7peaEeAa+FoWwfeLScz4XgwggZQD56PJra1bVxLuvUmC7AvLw8Mm4jIRrRWbHnrSWXZHwuIlO0Vvq3/+ig7VC1Fohan0DxiuWLlerpn4AAAAASUVORK5CYII=',
-			},
-			steps: [
-				{
-					down: [
-						{
-							actionId: 'template',
-							options: {
-								// options values to use
-								type: 'Camera',
-								variant: `${i}SOFT`,
-								bus: 'Program',
-							},
-						},
-					],
-					up: [],
-				},
-			],
-			feedbacks: [],
-		}
-	}
-
-	presets['external'] = {
-		category: `External`,
-		name: 'External',
-		type: 'text',
-		text: 'External Source Presets',
-	}
-
-	const extName = self.config.presetExtName || 'EXT'
-	for (let i = 1; i <= 10; i++) {
-		presets[`ext_${i}`] = {
-			type: 'button',
-			category: 'External',
-			name: `External ${i}`,
-			style: {
-				text: `${extName} ${i}`,
-				alignment: 'center:center',
-				size: 16,
-				color: combineRgb(0, 0, 0),
-				bgcolor: combineRgb(155, 0, 0),
-				pngalignment: 'center:bottom',
-				png64:
-					'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsSAAALEgHS3X78AAAA8ElEQVRYhe2W0Q2DMAxEz52EvbIBzJUF6EIdBHT9IQJRE7BJFZCI5B9IfI/4QiwkUXO8qqo/ALcHEJEgIuEUAUlXAGgBcIrWnaeA+CmIUuJuCLH+iEQku4CkWPJ5TPgGMCrPx+mdbTg90AMYMG/9AKBfzWmKeABzzdcCCUIT73HQExbDaUIRQNzZnSyE1e0/EDviuxBbiYKSZAkRlTVxQzxF0LSq3wXXLMElTHiJY2jY6v/9iAx1zvqjCACARhFex6EvT2E6hiQ/ALrMlG6aY0rqKUO9hmQDwt2SmRuS5UgNKcnoznEGoMSofhc8ANUBvhM/1Z0Gbf5iAAAAAElFTkSuQmCC',
-			},
-			steps: [
-				{
-					down: [
-						{
-							actionId: 'template',
-							options: {
-								// options values to use
-								type: 'Live',
-								variant: `${i}`,
-								bus: 'Preview',
-							},
-						},
-					],
-					up: [],
-				},
-			],
-			feedbacks: [],
-		}
-	}
+	AddPresetGroupPresets(self, presets)
 
 	presets['status'] = {
 		category: `Status`,
@@ -342,7 +177,7 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		category: 'Status',
 		name: 'Server Description',
 		style: {
-			text: '$(mosart:serverDescription)',
+			text: `$(${self.label}:serverDescription)`,
 			size: 14,
 			color: combineRgb(255, 255, 255),
 			bgcolor: combineRgb(50, 50, 50),
@@ -374,7 +209,7 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		category: 'Story Navigation',
 		name: 'Current Story',
 		style: {
-			text: `$(mosart:current_story_id)`,
+			text: `$(${self.label}:current_story_id)`,
 			alignment: 'center:center',
 			size: 10,
 			color: combineRgb(255, 255, 255),
@@ -455,7 +290,7 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 				category: 'Overlays',
 				name: `Overlay ${i}`,
 				style: {
-					text: `$(mosart:current_overlay_${i}_overlayName)`,
+					text: `$(${self.label}:current_overlay_${i}_overlayName)`,
 					alignment: 'center:center',
 					size: 8,
 					color: combineRgb(255, 255, 255),
@@ -467,7 +302,7 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 							{
 								actionId: 'take_overlay',
 								options: {
-									id: `$(mosart:current_overlay_${i}_id) - add id from variable for overlay ${i}`,
+									id: `$(${self.label}:current_overlay_${i}_id) - add id from variable for overlay ${i}`,
 									name: '',
 								},
 							},
@@ -533,6 +368,8 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 			feedbacks: [],
 		}
 	}
+
+	AddStatePresets(self, presets)
 
 	self.setPresetDefinitions(presets)
 }

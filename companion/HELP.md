@@ -52,20 +52,48 @@ When enabled, this feature:
 - Provides up to 20 overlay buttons per story with automatic variable population
 - Tracks the last taken overlay for easy take-out operations
 
+The overlay list is not polled. It is fetched once each time the connection to Mosart comes up, and again whenever the **Refresh Overlay List** action runs.
+
 **Note**: This feature is experimental and may require additional configuration in your Mosart system.
 
-### Preset Customization
+### Additional State Polling
 
-Customize the text displayed on preset buttons for cameras and external sources. This allows you to match the terminology used in your production environment.
+All of these options are off by default. Each one you enable adds one request to the Mosart server per poll interval. They run alongside the status poll, so a slow endpoint does not delay the status update. Enable only the ones your buttons use; a feedback or variable that depends on a disabled option stays inactive.
 
-- **Camera Hard Preset Name**: Text to display for hard camera presets (default: "HARD")
-  - Examples: "HARD", "H", "DIR", "CUT"
-- **Camera Soft Preset Name**: Text to display for soft camera presets (default: "SOFT")
-  - Examples: "SOFT", "S", "MIX", "FADE"
-- **External Preset Name**: Text to display for external source presets (default: "EXT")
-  - Examples: "EXT", "LIVE", "FEED", "REMOTE"
+- **Poll timeline stories/items (default off)**: Feeds the Timeline Story/Item Match feedback and the `timeline_*` variables
+  - Item slugs are template names (for example `DVE` or `HK`), so matching an item slug tells you which kind of item is on air rather than which specific one. MOS video clips use the clip ID as their slug, which shows up as a GUID. To match specific content, use the story slug instead
+- **Poll audio toggles (default off)**: Feeds the Audio Toggle State feedback, the audio toggle presets and the `audioToggle_*` variables
+- **Poll fader levels (default off)**: Feeds the Fader Level feedback and the `fader_*` variables. If two channel names produce the same variable ID, the later one (alphabetically) gets a `_2`, `_3`, … suffix
+- **Poll on-air graphics (default off)**: Feeds the Graphic On Air feedback and the `onair_graphics_*` variables
 
-Leave fields blank to use the default values. Changes will be reflected in all camera and external presets.
+If the fader levels request returns 404 (for example on an older Mosart version), the module pauses it for 60 seconds instead of retrying on every poll. A 404 from the on-air graphics request is treated as "nothing on air".
+
+### Preset Groups
+
+Preset groups build numbered sets of **Take template** buttons from a template type, variant and bus, so the presets match the template names used in your Mosart setup. Tick **Show preset groups** to see the settings. Hiding them again does not reset them; the values still apply.
+
+There are 6 slots. Slots 1-3 are enabled by default and recreate the original presets:
+
+| Slot | Name             | Type   | Variant   | Bus     | Label           |
+| ---- | ---------------- | ------ | --------- | ------- | --------------- |
+| 1    | Hard Cameras     | Camera | `{n}HARD` | Program | `CAM {n}\nHARD` |
+| 2    | Soft Cameras     | Camera | `{n}SOFT` | Program | `CAM {n}\nSOFT` |
+| 3    | External Sources | Live   | `{n}`     | Preview | `EXT {n}`       |
+
+Connections created before 1.5.0 keep their earlier labels, including "KAM" on the camera presets.
+
+Each enabled slot has these settings:
+
+- **Name**: Header above the group in the preset list, and the start of each preset's name
+- **Category**: Preset category the group appears in. Several groups can share a category, like the two camera groups
+- **Number of presets**: How many buttons to create (1-20), numbered from 1
+- **Template type**: The Mosart template type, e.g. Camera, Live, Package, DVE
+- **Variant**: The template variant. `{n}` is replaced by the button number, so `{n}HARD` gives `1HARD`, `2HARD`, … A variant without `{n}` gets the number added at the end, so `KAM` gives `KAM1`, `KAM2`, …
+- **Bus**: Program or Preview. **Insert** (Preview only) inserts the template into preview instead of replacing it
+- **Button label**: Text on each button. `{n}` is replaced by the number, and typing `\n` gives a line break
+- **Icon** and **Background**: Button look. The text colour is picked automatically to stay readable
+
+A blank text field uses the slot's default. Companion copies a preset onto a button when you drag it, so a change only shows on presets placed after it. Buttons that are already placed keep their text and template; edit those buttons directly or place the preset again.
 
 ---
 
@@ -245,22 +273,36 @@ For each story with overlays (sanitized story ID):
 
 - **F12 (Start/Continue)**: Quick button to start or continue the rundown
 - **Toggle Rehearsal Mode**: Button with feedback showing rehearsal status
+- **Set Server Active**: Takes the server out of idle; turns green when the server is active
 
-### Camera Category
+### Preset Group Categories (Camera, External, and your own)
 
-- **Hard Cameras (1-10)**: Pre-configured camera buttons for hard camera takes (KAM 1-10 HARD)
-  - Button text can be customized via the "Camera Hard Preset Name" config field
-- **Soft Cameras (1-10)**: Pre-configured camera buttons for soft camera takes (KAM 1-10 SOFT)
-  - Button text can be customized via the "Camera Soft Preset Name" config field
-
-### External Category
-
-- **External Sources (1-10)**: Pre-configured buttons for external sources (EXT 1-10) to preview
-  - Button text can be customized via the "External Preset Name" config field
+- **Hard Cameras (1-10)** and **Soft Cameras (1-10)** in **Camera**, and **External Sources (1-10)** in **External**, by default
+- Each enabled preset group adds its numbered buttons to its category; see **Preset Groups** above
 
 ### Status Category
 
 - **Mosart Status**: Connection status indicator with feedback
+- **Auto Take**, **Crossover Client**, **Server Description**: Indicators for the matching server status
+- **Timeline State**: Shows the timeline state; green when running, orange when paused
+- **Server State**: Shows Active/Idle; green when active, orange when idle
+- **Mosart Version**: Shows the Mosart server version
+
+### Categories that need Additional State Polling
+
+The presets below only update when the matching option under **Additional State Polling** is enabled. Each of these categories starts with a header that says which option it needs, and shows a ⚠ warning while that option is off.
+
+- **Timeline** (needs "Poll timeline stories/items")
+  - **Current Story / Next Story / Current Item / Next Item**: Show the slug of each
+  - **Story On Air / Story Next**: Light up when the current or next story has a given slug. Open the feedback on the button and type the slug
+- **Audio** (needs "Poll audio toggles")
+  - One button per audio toggle that lights up when the toggle is on. Fade Manual, Level 2 Preview and Level 2 On Air also send the matching audio command when pressed
+- **Faders** (needs "Poll fader levels")
+  - One button per fader channel showing its level, turning green when the fader is open (above 0). These are built from the channels the server reports, so they appear after the first fader poll
+- **On-Air Graphics** (needs "Poll on-air graphics")
+  - **Any Graphic On Air**: Shows how many graphics are on air; red while any are
+  - **On-Air Graphic Slugs**: Lists the slugs of the graphics on air
+  - **Graphic On Air**: Lights up when a graphic with a given slug is on air. Open the feedback on the button and type the slug
 
 ### Story Navigation Category (when Overlay List enabled)
 
@@ -280,11 +322,11 @@ For each story with overlays (sanitized story ID):
 
 1. **Initial Setup**: Ensure your API key is correct and the appropriate API type (Web/REST) is selected for your Mosart version.
 
-2. **Preset Customization**: Customize camera and external preset button labels to match your production terminology. For example, if your facility uses "CUT" instead of "HARD" or "LIVE" instead of "EXT", you can configure these in the module settings. Changes will automatically update all preset buttons.
+2. **Preset Groups**: Build template buttons that match your Mosart setup. For example, if your camera templates are called `KAM1`, `KAM2`, …, set a group's variant to `KAM{n}`; to add a row of package buttons, enable a spare slot with type Package. Changes apply to presets you place afterwards, not to buttons already on your pages.
 
 3. **Overlay List Feature**: Enable this for advanced graphics control. The module will automatically fetch overlay information and create dynamic buttons. Use the story navigation to browse through different stories and their associated overlays.
 
-4. **Variables in Presets**: The preset buttons use variables (e.g., `$(mosart:current_overlay_0_overlayName)`) to dynamically display information. These update automatically as you navigate stories.
+4. **Variables in Presets**: The preset buttons use variables (e.g., `$(mosart:current_overlay_0_overlayName)`, where `mosart` is your connection's label) to dynamically display information. These update automatically as you navigate stories.
 
 5. **Control Commands**: The extensive control command actions provide low-level access to Mosart functions. Consult your Mosart documentation for specific parameter requirements.
 

@@ -129,12 +129,14 @@ export function UpdateFeedbacks(self: MosartInstance): void {
 					type: 'textinput',
 					label: 'Value',
 					default: '',
+					useVariables: true,
 				},
 			],
-			callback: (feedback) => {
+			callback: async (feedback, context) => {
 				const item = self.mosartAPI.timelineInfo?.[feedback.options['position'] as TimelinePosition]
 				const actual = feedback.options['field'] === 'id' ? item?.id : item?.slug
-				return matches(actual, feedback.options['value'])
+				const value = await context.parseVariablesInString(String(feedback.options['value'] ?? ''))
+				return matches(actual, value)
 			},
 		},
 		FaderLevel: {
@@ -223,20 +225,21 @@ export function UpdateFeedbacks(self: MosartInstance): void {
 					type: 'textinput',
 					label: 'Value',
 					default: '',
+					useVariables: true,
 					isVisible: (options) => options['field'] !== 'any',
 				},
 			],
-			callback: (feedback) => {
+			callback: async (feedback, context) => {
 				const graphics = self.mosartAPI.onAirGraphics
+				if (feedback.options['field'] === 'any') return graphics.length > 0
+				const value = await context.parseVariablesInString(String(feedback.options['value'] ?? ''))
 				switch (feedback.options['field']) {
-					case 'any':
-						return graphics.length > 0
 					case 'id':
-						return graphics.some((graphic) => matches(graphic.id, feedback.options['value']))
+						return graphics.some((graphic) => matches(graphic.id, value))
 					case 'graphicsId':
-						return graphics.some((graphic) => matches(graphicsIdOf(graphic), feedback.options['value']))
+						return graphics.some((graphic) => matches(graphicsIdOf(graphic), value))
 					default:
-						return graphics.some((graphic) => matches(graphic.slug, feedback.options['value']))
+						return graphics.some((graphic) => matches(graphic.slug, value))
 				}
 			},
 		},

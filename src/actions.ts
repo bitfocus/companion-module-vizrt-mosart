@@ -1,5 +1,6 @@
 import { BusType, DeviceApiType, DeviceApiTypeWithId } from './api.js'
 import { MosartInstance } from './main.js'
+import { TEMPLATE_TYPES } from './presetGroups.js'
 
 const deviceTypes: DeviceApiType[] = [
 	'switcher',
@@ -177,21 +178,7 @@ export function UpdateActions(self: MosartInstance): void {
 					type: 'dropdown',
 					label: 'Type',
 					id: 'type',
-					choices: [
-						{ id: 'Camera', label: 'Camera' },
-						{ id: 'Package', label: 'Package' },
-						{ id: 'VoiceOver', label: 'VoiceOver' },
-						{ id: 'Live', label: 'Live' },
-						{ id: 'Graphics', label: 'Graphics' },
-						{ id: 'DVE', label: 'DVE' },
-						{ id: 'Jingle', label: 'Jingle' },
-						{ id: 'Telephone', label: 'Telephone' },
-						{ id: 'AdlibPix', label: 'AdlibPix' },
-						{ id: 'Break', label: 'Break' },
-						{ id: 'VideoWall', label: 'VideoWall' },
-						{ id: 'Sound', label: 'Sound' },
-						{ id: 'Accessories', label: 'Accessories' },
-					],
+					choices: TEMPLATE_TYPES.map((type) => ({ id: type, label: type })),
 					default: 'Camera',
 				},
 				{
@@ -224,7 +211,7 @@ export function UpdateActions(self: MosartInstance): void {
 					variant: action.options.variant as string,
 					bus: action.options.bus as string,
 				}
-				if (action.options.insert) options.insert = true
+				if (action.options.insert && options.bus === 'Preview') options.insert = true
 				await self.mosartAPI.takeTemplate(options)
 			},
 		},
@@ -312,10 +299,11 @@ export function UpdateActions(self: MosartInstance): void {
 					self.logMsg('warn', 'Take template by ID action called without an item ID - skipping')
 					return
 				}
+				const target = action.options.target as BusType
 				await self.mosartAPI.takeAssetTemplateById(
 					mosartItemId,
-					action.options.target as BusType,
-					action.options.insert ? true : undefined,
+					target,
+					action.options.insert && target === 'Preview' ? true : undefined,
 				)
 			},
 		},
@@ -436,6 +424,7 @@ export function UpdateActions(self: MosartInstance): void {
 		},
 		update_nrcs_settings: {
 			name: 'Update NRCS settings',
+			description: 'Changes the Mosart server NRCS configuration immediately, with no confirmation',
 			options: [
 				{
 					type: 'textinput',
@@ -491,6 +480,7 @@ export function UpdateActions(self: MosartInstance): void {
 		},
 		update_media_server: {
 			name: 'Update media server',
+			description: 'Changes a media server configuration on the Mosart server immediately, with no confirmation',
 			options: [
 				{
 					type: 'textinput',
@@ -519,6 +509,7 @@ export function UpdateActions(self: MosartInstance): void {
 		},
 		upsert_named_overlay: {
 			name: 'Create/update named overlay',
+			description: 'Writes a named overlay on the Mosart server. Update replaces the whole item',
 			options: [
 				{
 					type: 'dropdown',
@@ -562,6 +553,7 @@ export function UpdateActions(self: MosartInstance): void {
 		},
 		delete_named_overlay: {
 			name: 'Delete named overlay',
+			description: 'Permanently deletes a named overlay from the Mosart server, with no confirmation',
 			options: [
 				{
 					type: 'textinput',
