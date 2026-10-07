@@ -2,8 +2,14 @@
 // Simple script that runs the standard companion-module-build and moves output to a custom location
 
 import { fs } from 'zx'
-import path from 'path'
+import { readFileSync } from 'fs'
 import 'zx/globals'
+
+function builtArchiveName() {
+	const { version } = JSON.parse(readFileSync('package.json', 'utf8'))
+	const { id } = JSON.parse(readFileSync('companion/manifest.json', 'utf8'))
+	return `${id}-${version}.tgz`
+}
 
 if (process.platform === 'win32') {
 	usePowerShell() // to enable powershell
@@ -29,9 +35,15 @@ try {
 	await $`yarn build`
 	await $`companion-module-build`
 
-	// Check if build was successful
-	if (!fs.existsSync('pkg') || !fs.existsSync('pkg.tgz')) {
-		console.error('Build failed - pkg/ or pkg.tgz not found')
+	const builtTgz = builtArchiveName()
+
+	// Check if build was successful (companion-module-build writes pkg/ and {manifest-id}-{version}.tgz)
+	if (!fs.existsSync('pkg')) {
+		console.error('Build failed - pkg/ not found')
+		process.exit(1)
+	}
+	if (!fs.existsSync(builtTgz)) {
+		console.error(`Build failed - ${builtTgz} not found`)
 		process.exit(1)
 	}
 
@@ -49,11 +61,11 @@ try {
 
 	// Move the tgz file
 	const targetTgz = `${targetDir}.tgz`
-	console.log(`Moving pkg.tgz to ${targetTgz}`)
+	console.log(`Moving ${builtTgz} to ${targetTgz}`)
 	if (fs.existsSync(targetTgz)) {
 		await fs.remove(targetTgz)
 	}
-	await fs.move('pkg.tgz', targetTgz)
+	await fs.move(builtTgz, targetTgz)
 
 	console.log('')
 	console.log('✅ Package completed successfully!')

@@ -23,9 +23,9 @@ const MAX_PRESETS_PER_GROUP = 20
 
 const ICONS = {
 	camera:
-		'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAAA9UlEQVR42u3YYQ2CQBiA4YtgBCMQgQhGMIIRiGAEIxjBCEYwAg1O2O6HslMRpk7uebbvF+w23+GhFwIAAAAAAAAAAAAAULIY489HIIEEEkgggQT6aqAQwiaEcOlveTHn/t4SAx1HxLmdbYlPUHxz1vag+w+2HQTaCZSP1KSpS/qK1ROmKiLQyLfXozksOlB6EuKcyay56mbfrX3KPWVFB+qDdJt3e3O9Fuh+A28H1wVK6zQPrguU1okCCSTQJwPVmQ1aoMFbrErHIQI9+R20Sj8QFxOomhmofXJ80uSORP7xv9h+apwpB2fOpAUSSCCBBBJIoJGutiPbH8SPs5kAAAAASUVORK5CYII=',
+		'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAACtElEQVR4nO3Z4W3aUBSG4XMmiLsBnaB0guAJSidoNiCdoM4EpRMknSDpBDUTlBE6Ahu4r3UvaiPgHpsE+1o9j/Qqf44U9CkCAiouyQcy+EAGH8jgAxl8IIMPZPCBDD6QwQcy+ECGcwcq6BMt6TXsaBv7Qdk4Z6AlfaWZXMaObuk7jU6prwcJfz2XtqWSdjQapb5qEbmmIbTjvKX25yiU+lrTioaypfc0inMGmkl40Fc0lM+0psEpnWNOlYh8oCHs6A0N7tyBXttCwitXavCP9ESDymWgvXaAUyPdUSUDU8rJnH7RMRtayMCUclPJcb8lvAcbVI4DZcUHMpwz0FDvoo/Z0KCUuijoC93S2NZ0Rzu6OKUu1rSiXHyjW7q4rgM1lJuuj/1Fuv6SHAcqqZZ+FhI+qplJUFKSUhcN5aakWrop6JEW8pxSknkQTXmgObXjzOSQUpJ5EE11oCXdU0HHKCWZB1FDuSmpltNWtKYUpSTzIJraQPd0IzalJPMgaig3JdXyXEE/aU5dKCWZB1FDuSmplr/aUR5pJt0pJZkHUe4DLSSMU1AfSknmQZT7QJWE/xX7UkoyD6KGclNSLUElPtCBkmoJKvGBDpRUS1CJD3SgpFqCSnygAyXVElTiAx0oqZZgSe3LfF9KSeZBlPtArYWELx6vqCulJPMgmsJArZmEkd5RF0pJ5kE0lYFaBT3I6a+w/6WUZB5EUxpob00rSlFKMg+iKQ7UupHw0ccpSknmQdRQbkqqxTanWo4/eSslmQfRlAdqzeT4k7dSknkQTX2gvRsJzemKlJLMgyjHgbo+9hfp+kseJHzhlosNLWQASl0U9ETXNLYNLWlHF6fUx5wKGsuOtjSYvgP9d3wggw9k8IEMPpDBBzL4QAYfyOADGXwggw9k8IEMPpDBBzL4QAYfyPAHlpBySauXIPEAAAAASUVORK5CYII=',
 	external:
-		'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAAA2UlEQVR42u3Z0QnCMBRA0TeKe3WD7OUCnS8QCfRDapMWRaXpOZAfpR9e4muNEQAAAAAAAAAAAAAAdJVS/roEEkgggQT6UqCImOoSaPuDpXr5spJA7TgfRRouUCPO25FGDFR6S6CIOSLyRpz62mwGbUd6iRMRt0sEepo5cyNSbrx3aCadOtBqIG+FuNe1s7vSkIEad6vunOnMpzRUoOUJuXWnyutd87Sbcue6SaCrBPIVM6Td5j0o+qlxwkB1V+z9WD26cxx3ODBzYObI1aG9v30EEkgggX4a6AEJRU07PhWGwAAAAABJRU5ErkJggg==',
+		'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAAD1ElEQVR4nO3WzZHjNhRF4YsIzFBeCINMgMiMTIgQEAqdgQ9Kwxq3Wy3wD6AWOlXfkqh6dyM5fXrZZ6BGn4EafQZq9Bmo0bsNZKgVvEXvNJBhRs2j4PYc3iFDHWdCbYFHwa053J3hv+OsLfAouC2HOzM8G2dtgUfBLTncleHVOGsLPAqG53BHhi3jrC3wKBiaw+gMe8ZZW+BRMCyHkRmOjLO2wKNgSA6jMpwZZ22BR0H3HEZkuGKctQUeBV1z6J3hynHWFngUdMuhZ4Ye46wt8CjokkPPgqS/0bOIpE459C6o30gRSR1zGFHQ9SNFJHXOYVRB140UkTQgh5EFnR8pImlQDldkvyW1Czo+UkRSu6DHL1t1KoezGWZMiEhqF7R/pL1vL/AoOJzDmQwzJqxFJLULehyypaNvLvAoOJTD0QwzJvy/iKR2QV8PetbZtxZ4FOzO4UiGGRN+KiKpXdDzw2pXvFFb4FGwK4e9GWZMaBWR1C7o+4Fnvn3WAo+CzTnsyTBjwtYiktoF/Tn0yDdbWuBRsCmHrRlmTNhbRFK7oEdJ7YL2jbO2wKOgmcOWDDMmHC0i6ZqCjo2ztsCj4GUOrQwzJpwtIulcQefGWVvgUfBjDq8yzJhwVRFJxwq6Zpy1BR4FT3P4KcOMCVcXkbSvoGvHWVvgUfAth2cZZkzoVUTStoL6jLO2wKPgSw7PMmRJf6FXEUnbCuo70D/4pR0D1QxZfUaKSNpXUJ+Rfhyn5vAqQ9a1I0UkHSvo2pFejlNzaGXIumakiKRzBV0zUnOcmsOWDFnnRopIuqagcyNtGqfmsDVD1rGRIpLaBT1Kahd0bKTN49Qc9mTI2jdSRFK7oD8HH/lmS7vGqTnszZC1baSIpHZB3w898+2zdo9TcziSIev1SBFJ7YJ+PvCKN2qHxqk5HM2Q9XykiKR2Qa8Pq5196/A4NYczGbK+jhSR1C7o+UHPOvrmqXFqDmczZD1GikhqF/T1kC3tffv0ODWHK7LfktoFPQ44UkRSu6DHMNWpHEYWdHyctYikQTmMKuj8OGsRSQNyGFHQdeOsRSR1zqF3QdePsxaR1DGHngX1G2ctIqlTDj0zZD3+AvTokp/yV/UeqGbIun6k7uPURgxUM2RdN9KQcWqjBqoZss6PNGyc2siBaoas4yMNHac2eqCaIWv/SMPHqd0xUM2QtX2kW8ap3TVQzZDVHum2cWp3DlQzZP080q3j1O4eqGbI+j7S7ePU3mGgmiHrz0hvMU7tXQaqGbIe/dIbjFN7p4FqhlrBW/RuA71dn4EafQZq9Bmo0WegRv8CYb/4Sc9gGHMAAAAASUVORK5CYII=',
 } as const
 
 type PresetIcon = 'none' | keyof typeof ICONS
@@ -311,11 +311,11 @@ export function AddPresetGroupPresets(self: MosartInstance, presets: CompanionPr
 				name: `${group.name} ${n}`,
 				style: {
 					text: fillPattern(group.label, n, false).split('\\n').join('\n'),
-					alignment: group.icon === 'camera' ? 'center:top' : 'center:center',
-					size: 16,
+					alignment: icon ? 'center:bottom' : 'center:center',
+					size: icon ? 14 : 16,
 					color: textColorFor(group.bgcolor),
 					bgcolor: group.bgcolor,
-					...(icon ? { pngalignment: 'center:bottom' as const, png64: icon } : {}),
+					...(icon ? { pngalignment: 'center:center' as const, png64: icon } : {}),
 				},
 				steps: [
 					{

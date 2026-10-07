@@ -31,17 +31,17 @@ const AUDIO_TOGGLE_ACTIONS: Record<string, AudioTogglePresetAction> = {
 }
 
 /**
- * Header for a category whose presets depend on an optional poll. Presets are
- * rebuilt when the config changes, so the warning disappears once enabled.
+ * Header for a category whose presets depend on an optional config setting.
+ * Presets are rebuilt when the config changes, so the warning disappears once enabled.
  */
-function requirementHeader(category: string, option: string, enabled: boolean): CompanionTextPresetDefinition {
+export function requirementHeader(category: string, option: string, enabled: boolean): CompanionTextPresetDefinition {
 	return {
 		type: 'text',
 		category,
-		name: enabled ? category : `${category} (polling is off)`,
+		name: enabled ? category : `${category} (turned off in config)`,
 		text: enabled
 			? `Uses "${option}" from the connection config.`
-			: `⚠ Requires "${option}" in the connection config. It is currently off, so these buttons will not update.`,
+			: `⚠ Requires "${option}" in the connection config. It is currently off, so these buttons won't work until you turn it on.`,
 	}
 }
 

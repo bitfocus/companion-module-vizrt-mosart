@@ -304,16 +304,20 @@ The presets below only update when the matching option under **Additional State 
   - **On-Air Graphic Slugs**: Lists the slugs of the graphics on air
   - **Graphic On Air**: Lights up when a graphic with a given slug is on air. Open the feedback on the button and type the slug
 
-### Story Navigation Category (when Overlay List enabled)
+### Story Navigation and Overlays Categories (need "Enable Overlay List")
+
+These categories always show up in the preset list. While **Enable Overlay List** is off, each starts with a ⚠ header saying so, and the buttons log a warning instead of doing anything.
+
+**Story Navigation**
 
 - **Current Story**: Displays the current story ID
 - **Previous Story**: Navigate to previous story
 - **Next Story**: Navigate to next story
-- **Refresh**: Manually refresh the overlay list
+- **Refresh List**: Manually refresh the overlay list
 
-### Overlays Category (when Overlay List enabled)
+**Overlays**
 
-- **Overlay Buttons (0-19)**: Dynamic buttons showing overlay names from the current story, automatically populated with variables
+- **Overlay Buttons (0-19)**: The overlay type on the first line and the overlay name below it, white on black, filled in from the current story's variables. Pressing one takes that overlay (by its position in the current story) and remembers it for **Take Out Last**
 - **Take Out Last**: Quick button to take out the last taken overlay
 
 ---

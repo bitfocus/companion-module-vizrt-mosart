@@ -1,7 +1,9 @@
 import type { MosartInstance } from './main.js'
 import { combineRgb, CompanionPresetDefinitions } from '@companion-module/base'
 import { AddPresetGroupPresets } from './presetGroups.js'
-import { AddStatePresets } from './statePresets.js'
+import { AddStatePresets, requirementHeader } from './statePresets.js'
+
+const OVERLAY_LIST_OPTION = 'Enable Overlay List'
 
 export function UpdatePresetDefinitions(self: MosartInstance): void {
 	const presets: CompanionPresetDefinitions = {
@@ -197,12 +199,8 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		],
 	}
 
-	presets['story_header'] = {
-		category: 'Story Navigation',
-		name: 'Story Navigation',
-		type: 'text',
-		text: 'Story Navigation',
-	}
+	const overlayList = !!self.config.enableOverlayList
+	presets['story_header'] = requirementHeader('Story Navigation', OVERLAY_LIST_OPTION, overlayList)
 
 	presets['current_story'] = {
 		type: 'button',
@@ -274,66 +272,23 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		feedbacks: [],
 	}
 
-	// Add overlays header - only if feature enabled
-	if (self.config.enableOverlayList) {
-		presets['overlays_header'] = {
-			category: 'Overlays',
-			name: 'Overlays',
-			type: 'text',
-			text: 'Current Story Overlays',
-		}
-
-		// Create presets for up to 20 overlays in the current story
-		for (let i = 0; i < 20; i++) {
-			presets[`overlay_${i}`] = {
-				type: 'button',
-				category: 'Overlays',
-				name: `Overlay ${i}`,
-				style: {
-					text: `$(${self.label}:current_overlay_${i}_overlayName)`,
-					alignment: 'center:center',
-					size: 8,
-					color: combineRgb(255, 255, 255),
-					bgcolor: combineRgb(30, 41, 59),
-				},
-				steps: [
-					{
-						down: [
-							{
-								actionId: 'take_overlay',
-								options: {
-									id: `$(${self.label}:current_overlay_${i}_id) - add id from variable for overlay ${i}`,
-									name: '',
-								},
-							},
-						],
-						up: [],
-					},
-				],
-				feedbacks: [],
-			}
-		}
-
-		// Add Take Out Last button
-		presets['take_out_last'] = {
+	presets['overlays_header'] = requirementHeader('Overlays', OVERLAY_LIST_OPTION, overlayList)
+	// Create presets for up to 20 overlays in the current story
+	for (let i = 0; i < 20; i++) {
+		presets[`overlay_${i}`] = {
 			type: 'button',
 			category: 'Overlays',
-			name: 'Take Out Last',
+			name: `Overlay ${i}`,
 			style: {
-				text: 'Take Out\\nLast',
+				text: `$(${self.label}:current_overlay_${i}_overlayType)\n$(${self.label}:current_overlay_${i}_overlayName)`,
 				alignment: 'center:center',
-				size: 14,
+				size: 'auto',
 				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(200, 0, 0),
+				bgcolor: combineRgb(0, 0, 0),
 			},
 			steps: [
 				{
-					down: [
-						{
-							actionId: 'take_out_last_overlay',
-							options: {},
-						},
-					],
+					down: [{ actionId: 'trigger_current_overlay', options: { overlayIndex: i } }],
 					up: [],
 				},
 			],
@@ -341,32 +296,55 @@ export function UpdatePresetDefinitions(self: MosartInstance): void {
 		}
 	}
 
-	// Add refresh overlay list button if feature enabled
-	if (self.config.enableOverlayList) {
-		presets['refresh_overlay_list'] = {
-			type: 'button',
-			category: 'Story Navigation',
-			name: 'Refresh Overlay List',
-			style: {
-				text: '🔄\nRefresh',
-				alignment: 'center:center',
-				size: 14,
-				color: combineRgb(255, 255, 255),
-				bgcolor: combineRgb(50, 50, 50),
+	// Add Take Out Last button
+	presets['take_out_last'] = {
+		type: 'button',
+		category: 'Overlays',
+		name: 'Take Out Last',
+		style: {
+			text: 'Take Out\\nLast',
+			alignment: 'center:center',
+			size: 14,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(200, 0, 0),
+		},
+		steps: [
+			{
+				down: [
+					{
+						actionId: 'take_out_last_overlay',
+						options: {},
+					},
+				],
+				up: [],
 			},
-			steps: [
-				{
-					down: [
-						{
-							actionId: 'refresh_overlay_list',
-							options: {},
-						},
-					],
-					up: [],
-				},
-			],
-			feedbacks: [],
-		}
+		],
+		feedbacks: [],
+	}
+
+	presets['refresh_overlay_list'] = {
+		type: 'button',
+		category: 'Story Navigation',
+		name: 'Refresh Overlay List',
+		style: {
+			text: 'Refresh\nList',
+			alignment: 'center:center',
+			size: 14,
+			color: combineRgb(255, 255, 255),
+			bgcolor: combineRgb(50, 50, 50),
+		},
+		steps: [
+			{
+				down: [
+					{
+						actionId: 'refresh_overlay_list',
+						options: {},
+					},
+				],
+				up: [],
+			},
+		],
+		feedbacks: [],
 	}
 
 	AddStatePresets(self, presets)
