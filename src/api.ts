@@ -140,12 +140,12 @@ export interface AudioLevel {
 }
 
 export const AUDIO_TOGGLE_LABELS: Record<string, string> = {
-	holdAudioTransition: 'Hold Audio Transition',
-	holdVideoTransition: 'Hold Video Transition',
-	keepSoundLevels: 'Keep Sound Levels',
-	fadeManual: 'Fade Manual',
-	useLevel2Preview: 'Use Level 2 Preview',
-	useLevel2OnAir: 'Use Level 2 On Air',
+	holdAudioTransition: 'HA',
+	holdVideoTransition: 'HV',
+	keepSoundLevels: 'K',
+	fadeManual: 'FM',
+	useLevel2Preview: 'L2P',
+	useLevel2OnAir: 'L2O',
 }
 
 export type AudioToggles = Record<string, boolean>

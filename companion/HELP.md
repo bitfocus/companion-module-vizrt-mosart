@@ -296,7 +296,7 @@ The presets below only update when the matching option under **Additional State 
   - **Current Story / Next Story / Current Item / Next Item**: Show the slug of each
   - **Story On Air / Story Next**: Light up when the current or next story has a given slug. Open the feedback on the button and type the slug
 - **Audio** (needs "Poll audio toggles")
-  - One button per audio toggle that lights up when the toggle is on. Fade Manual, Level 2 Preview and Level 2 On Air also send the matching audio command when pressed
+  - One button per audio toggle that lights up when the toggle is on and sends the matching Mosart command when pressed (HA/HV use hold transition commands; K uses Freeze Audio; FM/L2P/L2O use the Audio control command)
 - **Faders** (needs "Poll fader levels")
   - One button per fader channel showing its level, turning green when the fader is open (above 0). These are built from the channels the server reports, so they appear after the first fader poll
 - **On-Air Graphics** (needs "Poll on-air graphics")

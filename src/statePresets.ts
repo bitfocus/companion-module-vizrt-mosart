@@ -14,13 +14,20 @@ const GREY = combineRgb(50, 50, 50)
 const GREEN = combineRgb(64, 253, 143)
 const ORANGE = combineRgb(255, 165, 0)
 const RED = combineRgb(255, 0, 0)
+const LIGHT_BLUE = combineRgb(135, 206, 250)
 
-// Audio toggles that have a matching action in the 'audio' control command.
-// The rest have no known command, so their presets are status indicators only.
-const AUDIO_TOGGLE_ACTIONS: Record<string, string> = {
-	fadeManual: 'FADE_MANUAL',
-	useLevel2Preview: 'SET_LEVEL_2_PREVIEW',
-	useLevel2OnAir: 'SET_LEVEL_2_ONAIR',
+/** Preset press action for a polled audio toggle (Mosart control command or AUDIO sub-action). */
+type AudioTogglePresetAction =
+	| { actionId: 'audio'; options: { Action: string; Faderate: number } }
+	| { actionId: 'control_command'; options: { command: string } }
+
+const AUDIO_TOGGLE_ACTIONS: Record<string, AudioTogglePresetAction> = {
+	holdAudioTransition: { actionId: 'control_command', options: { command: 'hold_audio_transition' } },
+	holdVideoTransition: { actionId: 'control_command', options: { command: 'hold_video_transition' } },
+	keepSoundLevels: { actionId: 'audio', options: { Action: 'FREEZE_AUDIO', Faderate: 0 } },
+	fadeManual: { actionId: 'audio', options: { Action: 'FADE_MANUAL', Faderate: 0 } },
+	useLevel2Preview: { actionId: 'audio', options: { Action: 'SET_LEVEL_2_PREVIEW', Faderate: 0 } },
+	useLevel2OnAir: { actionId: 'audio', options: { Action: 'SET_LEVEL_2_ONAIR', Faderate: 0 } },
 }
 
 /**
@@ -119,12 +126,12 @@ export function AddStatePresets(self: MosartInstance, presets: CompanionPresetDe
 			style: { text: label, size: '14', color: WHITE, bgcolor: BLACK },
 			steps: [
 				{
-					down: action ? [{ actionId: 'audio', options: { Action: action, Faderate: 0 } }] : [],
+					down: action ? [{ actionId: action.actionId, options: action.options }] : [],
 					up: [],
 				},
 			],
 			feedbacks: [
-				{ feedbackId: 'AudioToggleStatus', options: { toggle: key }, style: { bgcolor: ORANGE, color: BLACK } },
+				{ feedbackId: 'AudioToggleStatus', options: { toggle: key }, style: { bgcolor: LIGHT_BLUE, color: BLACK } },
 			],
 		}
 	}
