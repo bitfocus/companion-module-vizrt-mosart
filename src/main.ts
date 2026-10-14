@@ -189,6 +189,7 @@ export class MosartInstance extends InstanceBase<ModuleConfig> {
 
 		// Variables and presets depend on config (overlay list, fader levels, on-air graphics)
 		this.updateVariableDefinitions()
+		this.updateFeedbacks()
 		this.updatePresetDefinitions()
 
 		return

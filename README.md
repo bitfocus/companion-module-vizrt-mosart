@@ -6,6 +6,12 @@ Setup, actions, feedbacks and presets are described in [HELP.md](./companion/HEL
 
 ## Release notes
 
+### 1.5.1
+
+- A 4xx error from an action (for example updating or deleting a missing item) no longer marks the connection as lost. Only network errors and 5xx do
+- Write actions get a 4 second timeout instead of 1 second
+- Feedback definitions are refreshed when the config changes
+
 ### 1.5.0
 
 - Lots of new control command actions for devices, servers and faders

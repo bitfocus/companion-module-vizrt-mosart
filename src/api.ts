@@ -258,6 +258,9 @@ export type DeviceApiType =
 	| 'weather'
 
 const UNSUPPORTED_ENDPOINT_RETRY_MS = 60_000
+const POLL_TIMEOUT_MS = 1000
+// Kept below Companion's 5s action callback timeout.
+const WRITE_TIMEOUT_MS = 4000
 
 /** Returned by a background request that failed, so the caller can tell a 404 from a timeout. */
 export interface BackgroundFailure {
@@ -443,7 +446,7 @@ export class MosartAPI {
 
 		const options: OptionsOfTextResponseBody = {
 			method,
-			timeout: { request: 1000 },
+			timeout: { request: !background && method !== 'GET' ? WRITE_TIMEOUT_MS : POLL_TIMEOUT_MS },
 			retry: { limit: 0 },
 			headers,
 			searchParams: Object.keys(params).length > 0 ? params : undefined,
@@ -485,7 +488,10 @@ export class MosartAPI {
 			// Only the status poll and user actions decide the connection state; a
 			// slow or failing background request must not take the module offline.
 			if (background) return { failed: true, statusCode: err.response?.statusCode } satisfies BackgroundFailure
-			this.setConnected(false)
+			// A 4xx (e.g. a missing slug on update/delete) means the server answered,
+			// so only transport errors and 5xx count as a lost connection.
+			const statusCode: number | undefined = err.response?.statusCode
+			if (statusCode === undefined || statusCode >= 500) this.setConnected(false)
 			return null
 		}
 	}
